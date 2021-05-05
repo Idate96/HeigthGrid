@@ -1,5 +1,8 @@
 .DS_Store
 .huskyrc.json
+.vscode/
+build/ 
+dist/
 out
 .vscode
 log.log
