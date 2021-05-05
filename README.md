@@ -1,0 +1,1 @@
+Heightmap is a grid environment used to create planners for digging projects. 
