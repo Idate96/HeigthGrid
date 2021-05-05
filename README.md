@@ -1,1 +1,6 @@
-Heightmap is a grid environment used to create planners for digging projects. 
+# Heightmap  
+
+[![Build Status](https://www.travis-ci.com/Idate96/heightgrid.svg?branch=master)]
+
+
+Grid environment used to create planners for digging projects.
