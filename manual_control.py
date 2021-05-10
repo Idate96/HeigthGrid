@@ -3,7 +3,7 @@
 from heightgrid.envs.hole import Hole, HoleEnv5x5
 from heightgrid.envs.random_height import RandomHeightEnv5x5
 from matplotlib.pyplot import grid
-from heightgrid.envs.empty import EmptyEnv5x5
+from heightgrid.envs.empty import EmptyEnv32x32, EmptyEnv5x5
 import time
 import argparse
 import numpy as np

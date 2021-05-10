@@ -23,8 +23,11 @@ class Hole(GridWorld):
             grid_height=grid_height
         )
 
-    def reset(self):
-        obs = super().reset(agent_pose=(*self.agent_start_pos, self.agent_start_dir))
+    def reset(self, agent_pose=(0, 0, 0)):
+        # print("init pose ", agent_pose)
+        obs = super().reset(agent_pose=agent_pose)
+        self.agent_start_pos = (agent_pose[0], agent_pose[1])
+        self.agent_start_dir = agent_pose[2]
         self.agent_position = self.agent_start_pos
         self.agent_dir = self.agent_start_dir
         return obs
@@ -42,6 +45,13 @@ class HoleEnv5x5(Hole):
                          target_grid_height=target_map,
                          agent_start_pos=(zero_height_pos[0][0], zero_height_pos[1][0]),
                         **kwargs)
+    def reset(self):
+        zero_height_pos = np.where(self.grid_height == 0)
+        idx = np.random.randint(len(zero_height_pos[0]))
+        agent_position = (zero_height_pos[0][idx], zero_height_pos[1][idx])
+        agent_orientation = np.random.randint(0, 4)
+        obs = super().reset((*agent_position, agent_orientation))
+        return obs
         # self.place_obj_at_pos(Goal(), np.array([4, 4]))
 
 

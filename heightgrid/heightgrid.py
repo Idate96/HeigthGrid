@@ -1,14 +1,11 @@
 import numpy as np
 import gym 
-from gym import error, spaces, utils 
+from gym import spaces
 from abc import abstractmethod, ABCMeta
-from typing import Union
-from numpy.core.fromnumeric import nonzero
-from heightgrid import rendering
+import heightgrid.rendering
 from enum import IntEnum
 import warnings
-from heightgrid import window
-import heightgrid
+import heightgrid.window
 
 class Actions(IntEnum):
     # Turn left, turn right, move forward
@@ -113,7 +110,7 @@ class Goal(GridObject):
         return True
     
     def render(self, img):
-        rendering.fill_coords(img, rendering.point_in_rect(0, 1, 0, 1), COLORS[self.color])
+        heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 1), COLORS[self.color])
 
 
 class Ramp(GridObject):
@@ -129,16 +126,16 @@ class Ramp(GridObject):
         c = (255, 128, 0)
 
         # Background color
-        rendering.fill_coords(img, rendering.point_in_rect(0, 1, 0, 1), c)
+        heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 1), c)
 
         # Little waves
         for i in range(3):
             ylo = 0.3 + 0.2 * i
             yhi = 0.4 + 0.2 * i
-            rendering.fill_coords(img, rendering.point_in_line(0.1, ylo, 0.3, yhi, r=0.03), (0,0,0))
-            rendering.fill_coords(img, rendering.point_in_line(0.3, yhi, 0.5, ylo, r=0.03), (0,0,0))
-            rendering.fill_coords(img, rendering.point_in_line(0.5, ylo, 0.7, yhi, r=0.03), (0,0,0))
-            rendering.fill_coords(img, rendering.point_in_line(0.7, yhi, 0.9, ylo, r=0.03), (0,0,0))
+            heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_line(0.1, ylo, 0.3, yhi, r=0.03), (0,0,0))
+            heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_line(0.3, yhi, 0.5, ylo, r=0.03), (0,0,0))
+            heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_line(0.5, ylo, 0.7, yhi, r=0.03), (0,0,0))
+            heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_line(0.7, yhi, 0.9, ylo, r=0.03), (0,0,0))
 
 
 class Wall(GridObject):
@@ -149,7 +146,7 @@ class Wall(GridObject):
         return False
 
     def render(self, img):
-        rendering.fill_coords(img, rendering.point_in_rect(0, 1, 0, 1), COLORS[self.color])
+        heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 1), COLORS[self.color])
 
 
 class AgentObj(GridObject):
@@ -162,7 +159,7 @@ class AgentObj(GridObject):
         return True
 
     def render(self, img):
-        rendering.fill_coords(img, rendering.point_in_rect(0, 1, 0, 1), COLORS[self.color])
+        heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 1), COLORS[self.color])
 
 
 class GridWorld(gym.Env):
@@ -208,16 +205,8 @@ class GridWorld(gym.Env):
 
         self.window = None
         self.window_target = None
-    
-    # @property
-    # def carried_object(self):
-    #     return self.carried_object
-    
-    # @carried_object.setter
-    # def carried_object(self, obj:GridObject):
-    #     self.carrying = 1
-    #     self.carried_object = obj
-    
+ 
+
     @property
     def grid_object_pose(self):
         return self.obs[:, :, 2:]
@@ -257,7 +246,7 @@ class GridWorld(gym.Env):
             front_pos = None
         return front_pos
 
-    def reset(self, agent_pose:tuple = (0, 0, 0)):        
+    def reset(self, agent_pose:tuple = (0, 0, 0)):  
         # add agent to the observation space 
         self.grid_height_curr = self.grid_height
         self.grid_target_rel = self.grid_target - self.grid_height
@@ -268,8 +257,9 @@ class GridWorld(gym.Env):
         self.agent_dir = agent_pose[2]
         self.grid_object_pose[self.agent_pos[0], self.agent_pos[1], 1] = self.agent_dir
 
-        # add agent to the obj list for rendering 
+        # add agent to the obj list for heightgrid.rendering 
         self.place_obj_at_pos(AgentObj(), self.agent_pos)
+        self.step_count = 0 
 
         return self.obs
 
@@ -371,7 +361,7 @@ class GridWorld(gym.Env):
         current_dig_sites = np.sum(np.abs(self.obs[:, :, 1] - self.obs[:, :, 0]))
         reward = self.number_dig_sites - current_dig_sites
         self.number_dig_sites = current_dig_sites
-        return reward
+        return reward * 10
 
     def get_height(self, pos):
         return self.obs[pos[0], pos[1], 0]
@@ -386,7 +376,7 @@ class GridWorld(gym.Env):
     def step(self, action):
         self.step_count += 1
 
-        reward = 0
+        reward = -1
         done = False
 
         # Get the position in front of the agent
@@ -405,7 +395,7 @@ class GridWorld(gym.Env):
 
         # can dig or move forward only inside the bounds
         fwd_pos = self.front_pos
-        print("next_pos", fwd_pos)
+        # print("next_pos", fwd_pos)
         if self.in_bounds(fwd_pos):
             fwd_cell = self.get(*fwd_pos)
 
@@ -421,7 +411,7 @@ class GridWorld(gym.Env):
                     # for the moment restart on collision or fall into hole
                     if (type(fwd_cell) != Ramp):
                         done = True 
-                        reward = -1
+                        reward = -100
 
 
             # dig soil 
@@ -460,10 +450,15 @@ class GridWorld(gym.Env):
         # Done action (not used by default)
         elif action == self.actions.done:
             pass
-
-
+        
+        # finished the escavation project
+        if np.sum(np.abs(self.obs[:, :, 1])) < eps:
+            print("Done excavation")
+            done = True
+        
         if self.step_count >= self.max_steps:
             done = True
+
         return self.obs, reward, done, {}
 
 
@@ -494,23 +489,23 @@ class GridWorld(gym.Env):
         if obj != None:
             obj.render(img)
         else:
-            rendering.fill_coords(img, rendering.point_in_rect(0, 1, 0, 1), np.array([255, 255, 255])*(height + 3)/7)
-            rendering.fill_coords(img, rendering.point_in_rect(0, 0.031, 0, 1), (100, 100, 100))
-            rendering.fill_coords(img, rendering.point_in_rect(0, 1, 0, 0.031), (100, 100, 100))
+            heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 1), np.array([255, 255, 255])*(height + 3)/7)
+            heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 0.031, 0, 1), (100, 100, 100))
+            heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 0.031), (100, 100, 100))
         # Overlay the agent on top
         if agent_dir is not None:
-            tri_fn = rendering.point_in_triangle(
+            tri_fn = heightgrid.rendering.point_in_triangle(
                 (0.12, 0.81),
                 (0.12, 0.19),
                 (0.87, 0.50),
             )
 
             # Rotate the agent based on its direction
-            tri_fn = rendering.rotate_fn(tri_fn, cx=0.5, cy=0.5, theta=np.pi/2 - 0.5*np.math.pi*agent_dir)
-            rendering.fill_coords(img, tri_fn, (255, 0, 0))
+            tri_fn = heightgrid.rendering.rotate_fn(tri_fn, cx=0.5, cy=0.5, theta=np.pi/2 - 0.5*np.math.pi*agent_dir)
+            heightgrid.rendering.fill_coords(img, tri_fn, (255, 0, 0))
 
         # Downsample the image to perform supersampling/anti-aliasing
-        img = rendering.downsample(img, subdivs)
+        img = heightgrid.rendering.downsample(img, subdivs)
 
         # Cache the rendered tile
         cls.tile_cache[key] = img
@@ -576,8 +571,8 @@ class GridWorld(gym.Env):
             return
 
         if mode == 'human' and not self.window:
-            self.window = window.Window('heightgrid')
-            self.window_target = window.Window('relative target')
+            self.window = heightgrid.window.Window('heightgrid')
+            self.window_target = heightgrid.window.Window('relative target')
 
 
         # Render the whole grid
@@ -609,10 +604,3 @@ class GridWorld(gym.Env):
 
         return img, img_target
     
-    # def init_windows(self):
-    #     self.window = window.Window('heightgrid')
-    #     self.window_target = window.Window('relative target')
-    #     self.window.show(block=True)
-    #     self.window_target.show(block=True)
-    #     self.render(mode='human')
-
