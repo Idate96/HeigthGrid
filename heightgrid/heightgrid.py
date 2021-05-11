@@ -182,7 +182,13 @@ class GridWorld(gym.Env):
         # self.grid_object_pose = np.zeros((self.x_dim, self.y_dim, 2))
 
         # current grid height, relative target height, current obj pos, current obj orientation
-        self.observation_space = spaces.Box(low=0, high=255, shape=(*np.shape(grid_height), 4), dtype=np.uint8)
+        self.observation_space = spaces.Dict({
+            'grid' : spaces.Box(low=-10, high=10, shape=(*np.shape(grid_height), 4), dtype=np.int8), 
+            'agent_orientation': spaces.Discrete(4),
+            'agent_carrying': spaces.Discrete(2)
+        })
+
+        # self.observation_space = spaces.Box(low=0, high=255, shape=(*np.shape(grid_height), 4), dtype=np.uint8)
         self.obs = np.zeros((self.x_dim, self.y_dim, 4))
 
         self.max_steps = max_steps
@@ -375,13 +381,9 @@ class GridWorld(gym.Env):
 
     def step(self, action):
         self.step_count += 1
-
+        # living negative reward to encourage shortest trajectory
         reward = -1
         done = False
-
-        # Get the position in front of the agent
-
-        # Get the contents of the cell in front of the agent
 
         # Rotate left
         if action == self.actions.left:
@@ -393,15 +395,18 @@ class GridWorld(gym.Env):
         elif action == self.actions.right:
             self.agent_dir = (self.agent_dir + 1) % 4
 
-        # can dig or move forward only inside the bounds
+        # Get the position in front of the agent
         fwd_pos = self.front_pos
-        # print("next_pos", fwd_pos)
+        
         if self.in_bounds(fwd_pos):
+            # Get the contents of the cell in front of the agent
             fwd_cell = self.get(*fwd_pos)
 
             # Move forward
             if action == self.actions.forward:
+                # same eight of use a ramp 
                 if self.is_traversable(self.agent_pos, fwd_pos):
+                    # walls for example cannot be overlapped
                     if (fwd_cell == None or fwd_cell.can_overlap):
                         self.agent_pos = fwd_pos
                     if fwd_cell != None and fwd_cell.type == 'goal':
@@ -411,32 +416,35 @@ class GridWorld(gym.Env):
                     # for the moment restart on collision or fall into hole
                     if (type(fwd_cell) != Ramp):
                         done = True 
-                        reward = -100
+                        reward = -1
 
 
             # dig soil 
             elif action == self.actions.dig:
                 if self.can_dig(self.agent_pos, fwd_pos):
+                    # can dig if bucket is empty
                     if self.carrying != 1:
-                        #
-                        self.carrying = 1
                         # remove one unit of soild
                         self.obs[fwd_pos[0], fwd_pos[1], 0] -= 1
-                        # self.carrying.cur_pos = np.array([-1, -1])
-                        # with digging you can remove ramps too 
-                        # self.set(*fwd_pos, None)
-                        reward = self.dig_reward()
                         self.grid_target_rel = self.grid_target - self.obs[:, :, 0]
+                        # bucket full 
+                        self.carrying = 1
+                        # +1 if dug were supposed, -1 otherwise
+                        reward = self.dig_reward()
+
+
 
             # Dump soil an object
             elif action == self.actions.drop:
                 if self.carrying == 1:
                     if not fwd_cell and self.can_dig(self.agent_pos, fwd_pos):
+                        # increase height map where soil is dumped 
                         self.obs[fwd_pos[0], fwd_pos[1], 0] += 1
-                        # self.place_obj_at_pos(*fwd_pos, self.carrying)
-                        # self.carrying.cur_pos = fwd_pos
-                        self.carrying = 0
                         self.grid_target_rel = self.grid_target - self.obs[:, :, 0]
+
+                        # bucket is empty
+                        self.carrying = 0
+
 
 
             # Toggle/activate an object
@@ -459,7 +467,11 @@ class GridWorld(gym.Env):
         if self.step_count >= self.max_steps:
             done = True
 
-        return self.obs, reward, done, {}
+        obs = {'image': self.obs,
+               'agent_orientation': self.agent_dir,
+               'agent_carrying': self.carrying}
+
+        return obs, reward, done, {}
 
 
     @classmethod

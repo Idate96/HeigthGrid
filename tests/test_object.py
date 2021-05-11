@@ -1,6 +1,6 @@
 import unittest
 import numpy as np 
-from heightgrid.heightgrid import Goal, Agent, Ramp
+from heightgrid.heightgrid import Goal, AgentObj, Ramp
 
 class TestObjects(unittest.TestCase):
 
@@ -15,7 +15,7 @@ class TestObjects(unittest.TestCase):
         self.assertEqual(True, ramp.orientable)
     
     def test_agent_init(self):
-        agent = Agent()
+        agent = AgentObj()
         self.assertEqual(True, agent.orientable)
         self.assertEqual('agent', agent.type)
 
