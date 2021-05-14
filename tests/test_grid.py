@@ -40,7 +40,7 @@ class GridTester(unittest.TestCase):
         target_map = np.zeros((5, 5, 1))
 
         target_obs = np.concatenate((height_map, target_map, target_position, target_orientation), axis=2)
-        npt.assert_allclose(target_obs, obs)
+        npt.assert_allclose(target_obs, obs['image'])
 
     def test_grid_obj(self):
         len_grid_obj = 5 * 5 

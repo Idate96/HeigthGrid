@@ -18,10 +18,10 @@ class Actions(IntEnum):
     # Drop an soil that was dug
     drop = 4
     # make a ramp 
-    toggle = 5
+    # toggle = 5
 
     # Done completing task
-    done = 6
+    # done = 6
 
 eps = 10**-7
 
@@ -68,6 +68,7 @@ DIR_TO_INT = [
     2,
     3
 ]
+
 DIR_TO_VEC = [
     # Pointing right (positive X)
     np.array((1, 0)),
@@ -159,6 +160,7 @@ class AgentObj(GridObject):
         return True
 
     def render(self, img):
+        # heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 1), np.array([255, 255, 255])*(height + 3)/7)
         heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 1), COLORS[self.color])
 
 
@@ -170,6 +172,7 @@ class GridWorld(gym.Env):
         assert np.shape(grid_height) == np.shape(target_grid_height)
         # actions are discrete
         self.action_space = spaces.Discrete(len(Actions))
+        # print(len(Actions))
         self.actions = Actions
         # these values are not modified during run time
         self.grid_height = grid_height
@@ -183,9 +186,9 @@ class GridWorld(gym.Env):
 
         # current grid height, relative target height, current obj pos, current obj orientation
         self.observation_space = spaces.Dict({
-            'grid' : spaces.Box(low=-10, high=10, shape=(*np.shape(grid_height), 4), dtype=np.int8), 
-            'agent_orientation': spaces.Discrete(4),
-            'agent_carrying': spaces.Discrete(2)
+            'image' : spaces.Box(low=-10, high=10, shape=(*np.shape(grid_height), 4), dtype=np.int8), 
+            'agent_orientation': spaces.Box(low=0, high=1, shape=(2,), dtype=np.uint8),
+            'agent_carrying': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8)
         })
 
         # self.observation_space = spaces.Box(low=0, high=255, shape=(*np.shape(grid_height), 4), dtype=np.uint8)
@@ -194,7 +197,7 @@ class GridWorld(gym.Env):
         self.max_steps = max_steps
     
         self.seed(seed=seed)
-
+        
         self.reset()
         self.obs = np.zeros((*np.shape(grid_height), 4))
         # array with two coordinates
@@ -211,32 +214,39 @@ class GridWorld(gym.Env):
 
         self.window = None
         self.window_target = None
+
  
 
     @property
     def grid_object_pose(self):
         return self.obs[:, :, 2:]
-    
+
+
     @grid_object_pose.setter
     def grid_object_pose(self, value):
         self.obs[:, :, 2:] = value
-    
+
+
     @property
     def grid_height_curr(self):
         return self.obs[:, :, 0]
-    
+
+
     @grid_height_curr.setter
     def grid_height_curr(self, value):
         self.obs[:, :, 0] = value
-    
+
+
     @property
     def grid_target_rel(self):
         return self.obs[:, :, 1]
-    
+
+
     @grid_target_rel.setter
     def grid_target_rel(self, value):
         self.obs[:, :, 1] = value
-    
+
+
     @property
     def front_pos(self):
         if self.agent_dir == 0:
@@ -252,6 +262,18 @@ class GridWorld(gym.Env):
             front_pos = None
         return front_pos
 
+    def __str__(self):
+        repre = "Height " + 10 * "-" + "\n"
+        repre += np.array2string(self.obs[:, :, 0])
+        repre += "\nRelative Height " + 10 * "-"  + "\n"
+        repre += np.array2string(self.obs[:, :, 1])
+        repre += "\nObjects " + 10 * "-" + "\n"
+        repre += np.array2string(self.obs[:, :, 2])
+        repre += "Agent orientation " + np.array2string(DIR_TO_VEC[int(self.agent_dir)]) + "\n"
+        repre += "Full bucket " + str(self.carrying)
+        return repre
+
+
     def reset(self, agent_pose:tuple = (0, 0, 0)):  
         # add agent to the observation space 
         self.grid_height_curr = self.grid_height
@@ -264,10 +286,18 @@ class GridWorld(gym.Env):
         self.grid_object_pose[self.agent_pos[0], self.agent_pos[1], 1] = self.agent_dir
 
         # add agent to the obj list for heightgrid.rendering 
+        self.grid_object = self.x_dim * self.y_dim * [None]
         self.place_obj_at_pos(AgentObj(), self.agent_pos)
         self.step_count = 0 
 
-        return self.obs
+        self.number_dig_sites = np.sum(np.abs(self.grid_target_rel))
+        # print(self.grid_object)
+
+        obs = {'image': self.obs,
+               'agent_orientation': DIR_TO_VEC[self.agent_dir],
+               'agent_carrying': 0}
+
+        return obs
 
 
     def update_grid(self, grid_height:np.array, target_grid_height:np.array):
@@ -323,6 +353,7 @@ class GridWorld(gym.Env):
         assert j <= self.y_dim, "Grid index j out of boudns"
         return self.grid_object[i + self.x_dim * j]
     
+
     def remove_obj_at_pos(self, pos:np.array):
         if self.grid_object[pos[0] + self.x_dim * pos[1]] is None:
             warnings.warn("Cannot remove object at (%d, %d), no object present" .format(pos[0], pos[1]))
@@ -364,13 +395,28 @@ class GridWorld(gym.Env):
 
 
     def dig_reward(self):
-        current_dig_sites = np.sum(np.abs(self.obs[:, :, 1] - self.obs[:, :, 0]))
+        current_dig_sites = np.sum(np.abs(self.grid_target_rel))
         reward = self.number_dig_sites - current_dig_sites
         self.number_dig_sites = current_dig_sites
+        # print("dig reward ", reward)
         return reward * 10
+
 
     def get_height(self, pos):
         return self.obs[pos[0], pos[1], 0]
+
+
+    def move_obj_pos(self, pos, fwd_pos, obj):
+        self.remove_obj_at_pos(pos)
+        self.obs[pos[0], pos[1], 2] = 0
+        self.obs[fwd_pos[0], fwd_pos[1], 2] = OBJECT_TO_IDX[obj.type]
+        self.place_obj_at_pos(obj, fwd_pos)
+
+
+    def move_agent_pos(self, fwd_pos):
+        self.move_obj_pos(self.agent_pos, fwd_pos, self.get(*self.agent_pos))
+        self.agent_pos = fwd_pos
+
 
     def place_ramp(self, curret_pos, target_pos):
         # if a block has a higher height you can modify it to create a ramp
@@ -408,17 +454,18 @@ class GridWorld(gym.Env):
                 if self.is_traversable(self.agent_pos, fwd_pos):
                     # walls for example cannot be overlapped
                     if (fwd_cell == None or fwd_cell.can_overlap):
-                        self.agent_pos = fwd_pos
+                        self.move_agent_pos(fwd_pos)
+
                     if fwd_cell != None and fwd_cell.type == 'goal':
                         done = True
                         reward = 1
                 else:
                     # for the moment restart on collision or fall into hole
                     if (type(fwd_cell) != Ramp):
-                        done = True 
-                        reward = -1
+                        done = False
+                        reward = 0
 
-
+        
             # dig soil 
             elif action == self.actions.dig:
                 if self.can_dig(self.agent_pos, fwd_pos):
@@ -444,20 +491,22 @@ class GridWorld(gym.Env):
 
                         # bucket is empty
                         self.carrying = 0
+                        reward = self.dig_reward()
 
 
 
-            # Toggle/activate an object
-            elif action == self.actions.toggle:
-                if fwd_cell is None:
-                    self.place_ramp(self.agent_pos, fwd_pos)
-                else:
-                    self.remove_obj_at_pos(fwd_pos)
+
+        #     # Toggle/activate an object
+        #     elif action == self.actions.toggle:
+        #         if fwd_cell is None:
+        #             self.place_ramp(self.agent_pos, fwd_pos)
+        #         else:
+        #             self.remove_obj_at_pos(fwd_pos)
 
 
-        # Done action (not used by default)
-        elif action == self.actions.done:
-            pass
+        # # Done action (not used by default)
+        # elif action == self.actions.done:
+        #     pass
         
         # finished the escavation project
         if np.sum(np.abs(self.obs[:, :, 1])) < eps:
@@ -468,7 +517,7 @@ class GridWorld(gym.Env):
             done = True
 
         obs = {'image': self.obs,
-               'agent_orientation': self.agent_dir,
+               'agent_orientation': DIR_TO_VEC[int(self.agent_dir)],
                'agent_carrying': self.carrying}
 
         return obs, reward, done, {}
@@ -488,11 +537,16 @@ class GridWorld(gym.Env):
         """
 
         # Hash map lookup key for the cache
-        key = (agent_dir, False, tile_size)
-        key = obj.encode() + key if obj else key
+        
+        key = str(tile_size) + 'h' + str(height)
+        key = obj.type + key if obj else key
+        # print(key, obj)
+        # key = obj.encode() if obj else key
 
-        # if key in cls.tile_cache:
-        #     return cls.tile_cache[key]
+
+        if key in cls.tile_cache and obj is None:
+            # print("cached")
+            return cls.tile_cache[key]
 
         img = np.zeros(shape=(tile_size * subdivs, tile_size * subdivs, 3), dtype=np.uint8)
 
@@ -504,6 +558,7 @@ class GridWorld(gym.Env):
             heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 1), np.array([255, 255, 255])*(height + 3)/7)
             heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 0.031, 0, 1), (100, 100, 100))
             heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 0.031), (100, 100, 100))
+        
         # Overlay the agent on top
         if agent_dir is not None:
             tri_fn = heightgrid.rendering.point_in_triangle(
@@ -520,6 +575,7 @@ class GridWorld(gym.Env):
         img = heightgrid.rendering.downsample(img, subdivs)
 
         # Cache the rendered tile
+        
         cls.tile_cache[key] = img
 
         return img
@@ -538,6 +594,7 @@ class GridWorld(gym.Env):
         :param r: target renderer object
         :param tile_size: tile size in pixels
         """
+        # print(self)
         # Compute the total grid size
         width_px = self.x_dim * tile_size
         height_px = self.y_dim * tile_size
@@ -554,6 +611,10 @@ class GridWorld(gym.Env):
                     cell = None
 
                 agent_here = np.array_equal(agent_pos, (i, j))
+                # if agent_here:
+                #     # print("agent here : ({}, {}) {}" .format(i, j, agent_here))
+                #     print(cell)
+                
                 tile_img = self.render_tile(
                     cell,
                     height_grid[i, j],
@@ -567,7 +628,7 @@ class GridWorld(gym.Env):
                 xmax = (i+1) * tile_size
                 img[ymin:ymax, xmin:xmax, :] = tile_img
 
-        return img
+        return img.transpose(1, 0, 2)
     
 
     def render(self, mode='human', close=False, block=False, key_handler=None, tile_size=SIZE_TILE_PIXELS):
@@ -600,7 +661,7 @@ class GridWorld(gym.Env):
             self.obs[:, :, 1],
             self.agent_pos, 
             self.agent_dir,
-            render_objects=False
+            render_objects=True
         )
 
         if mode == 'human':

@@ -29,15 +29,16 @@ def reset():
 
     redraw()
 
-def step(action):
-    obs, reward, done, info = env.step(action)
-    print('step=%s, reward=%.2f' % (env.step_count, reward))
+# def step(action):
+#     obs, reward, done, info = env.step(action)
+#     print('step=%s, reward=%.2f' % (env.step_count, reward))
 
-    if done:
-        print('done!')
-        reset()
-    else:
-        redraw()
+#     if done:
+#         print('done!')
+#         reset()
+#     else:
+#         redraw()
+
 
 def key_handler(event):
     print('pressed', event.key)
@@ -72,7 +73,7 @@ def key_handler(event):
         return
 
     if event.key == 'pageup':
-        print(step(env.actions.dig))
+        # print(step(env.actions.dig))
         obs, reward, done, info  = env.step(env.actions.dig)
         parse_step(obs, reward, done, info)
         return
