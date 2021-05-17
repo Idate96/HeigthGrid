@@ -5,7 +5,7 @@ from functools import reduce
 import numpy as np
 import gym
 from gym import error, spaces, utils
-from .heightgrid import OBJECT_TO_IDX, COLOR_TO_IDX, STATE_TO_IDX, Goal
+from .heightgrid import OBJECT_TO_IDX, COLOR_TO_IDX, Goal
 
 class ReseedWrapper(gym.core.Wrapper):
     """
@@ -124,7 +124,7 @@ class OneHotPartialObsWrapper(gym.core.ObservationWrapper):
         obs_shape = env.observation_space['image'].shape
 
         # Number of bits per cell
-        num_bits = len(OBJECT_TO_IDX) + len(COLOR_TO_IDX) + len(STATE_TO_IDX)
+        num_bits = len(OBJECT_TO_IDX) + len(COLOR_TO_IDX)
 
         self.observation_space.spaces["image"] = spaces.Box(
             low=0,

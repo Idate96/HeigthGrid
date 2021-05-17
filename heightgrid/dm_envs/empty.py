@@ -22,10 +22,10 @@ class FlatEnv(GridWorld):
         )
 
     def reset(self):
-        obs = super().reset(agent_pose=(*self.agent_start_pos, self.agent_start_dir))
+        restart = super().reset(agent_pose=(*self.agent_start_pos, self.agent_start_dir))
         self.agent_position = self.agent_start_pos
         self.agent_dir = self.agent_start_dir
-        return obs
+        return restart
 
 class EmptyEnv5x5(FlatEnv):
     def __init__(self, **kwargs):
@@ -57,37 +57,37 @@ class EmptyEnv32x32(FlatEnv):
         super().__init__(grid_height=np.zeros((32, 32)), 
                          target_grid_height=np.zeros((32, 32)), **kwargs)
 
-register(
-    id='HeightGrid-Empty-5x5-v0',
-    entry_point='heightgrid.envs:EmptyEnv5x5'
-)
+# register(
+#     id='HeightGrid-Empty-5x5-v0',
+#     entry_point='heightgrid.envs:EmptyEnv5x5'
+# )
 
-register(
-    id='HeightGrid-Empty-Random-5x5-v0',
-    entry_point='heightgrid.envs:EmptyRandomEnv5x5'
-)
+# register(
+#     id='HeightGrid-Empty-Random-5x5-v0',
+#     entry_point='heightgrid.envs:EmptyRandomEnv5x5'
+# )
 
-register(
-    id='HeightGrid-Empty-6x6-v0',
-    entry_point='heightgrid.envs:EmptyEnv6x6'
-)
+# register(
+#     id='HeightGrid-Empty-6x6-v0',
+#     entry_point='heightgrid.envs:EmptyEnv6x6'
+# )
 
-register(
-    id='HeightGrid-Empty-Random-6x6-v0',
-    entry_point='heightgrid.envs:EmptyRandomEnv6x6'
-)
+# register(
+#     id='HeightGrid-Empty-Random-6x6-v0',
+#     entry_point='heightgrid.envs:EmptyRandomEnv6x6'
+# )
 
-register(
-    id='HeightGrid-Empty-8x8-v0',
-    entry_point='heightgrid.envs:EmptyEnv'
-)
+# register(
+#     id='HeightGrid-Empty-8x8-v0',
+#     entry_point='heightgrid.envs:EmptyEnv'
+# )
 
-register(
-    id='HeightGrid-Empty-16x16-v0',
-    entry_point='heightgrid.envs:EmptyEnv16x16'
-)
+# register(
+#     id='HeightGrid-Empty-16x16-v0',
+#     entry_point='heightgrid.envs:EmptyEnv16x16'
+# )
 
-register(
-    id='HeightGrid-Empty-32x32-v0',
-    entry_point='heightgrid.envs:EmptyEnv32x32'
-)
+# register(
+#     id='HeightGrid-Empty-32x32-v0',
+#     entry_point='heightgrid.envs:EmptyEnv32x32'
+# )

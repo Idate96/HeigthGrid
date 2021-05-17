@@ -2,6 +2,7 @@ README.md
 setup.py
 heightgrid/__init__.py
 heightgrid/create_maps.py
+heightgrid/dm_heightgrid.py
 heightgrid/heightgrid.py
 heightgrid/register.py
 heightgrid/rendering.py

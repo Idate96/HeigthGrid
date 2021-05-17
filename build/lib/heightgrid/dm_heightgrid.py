@@ -1,6 +1,6 @@
 import numpy as np
 import gym 
-from gym import spaces
+import dm_env
 from abc import abstractmethod, ABCMeta
 import heightgrid.rendering
 from enum import IntEnum
@@ -164,7 +164,7 @@ class AgentObj(GridObject):
         heightgrid.rendering.fill_coords(img, heightgrid.rendering.point_in_rect(0, 1, 0, 1), COLORS[self.color])
 
 
-class GridWorld(gym.Env):
+class GridWorld(dm_env.Environment):
     tile_cache = {}
 
     def __init__(self, grid_height: np.ndarray, target_grid_height:np.ndarray, max_steps=100, seed=24) -> None:
