@@ -2,7 +2,7 @@
 from heightgrid.dm_envs.hole import Hole, HoleEnv5x5
 # from heightgrid.dm_envs.random_height import RandomHeightEnv5x5
 from matplotlib.pyplot import grid
-from heightgrid.dm_envs.empty import EmptyEnv32x32, EmptyEnv5x5
+from heightgrid.dm_envs.empty import EmptyEnv32x32, EmptyEnv5x5, EmptyEnv8x8
 import time
 import argparse
 import numpy as np
@@ -80,10 +80,11 @@ def key_handler(event):
         return
 
     if event.key == 'enter':
-        timestep =  (env.actions.done)
+        # obs, reward, done, info =  (env.actions.done)
+        print("resetting")
+        env.reset()
+        redraw()
         return
-
-
 # def parse_step(obs, reward, done, info):
 #     redraw()
 #     # print("Observations [:, :, 0] \n", obs['image'][:, :, 0])
@@ -128,7 +129,7 @@ args = parser.parse_args()
 # grid_height[1, 3] = 1
 # env = gym.make(args.env)
 # env = EmptyEnv5x5()
-env = HoleEnv5x5()
+env = EmptyEnv8x8()
 env.reset()
 # if args.agent_view:
 #     env = FullyObsWrapper(env)

@@ -211,6 +211,7 @@ class GridWorld(dm_env.Environment):
         self.window_target = None
 
         self._reset_next_step = True
+        self._goal = False
 
 
  
@@ -445,8 +446,7 @@ class GridWorld(dm_env.Environment):
     def step(self, action):
         self.step_count += 1
         # living negative reward to encourage shortest trajectory
-        reward = -1.
-        done = False
+        reward = -0.1
 
         # Rotate left
         if action == self.actions.left:
@@ -461,6 +461,7 @@ class GridWorld(dm_env.Environment):
         # Get the position in front of the agent
         fwd_pos = self.front_pos
         
+
         if self.in_bounds(fwd_pos):
             # Get the contents of the cell in front of the agent
             fwd_cell = self.get(*fwd_pos)
@@ -474,13 +475,16 @@ class GridWorld(dm_env.Environment):
                         self.move_agent_pos(fwd_pos)
 
                     if fwd_cell != None and fwd_cell.type == 'goal':
-                        done = True
-                        reward = 1.
+                        self._reset_next_step = True
+                        print("Reached the goal in steps : ", self.step_count)
+                        return dm_env.termination(reward=1., observation=self._observation())
+                        
                 else:
                     # for the moment restart on collision or fall into hole
                     if (type(fwd_cell) != Ramp):
-                        done = False
-                        reward = 0.
+                        # self._reset_next_step = True
+                        # return dm_env.termination(reward=-100., observation=self._observation())
+                        reward-=2
 
         
             # dig soil 
@@ -494,9 +498,9 @@ class GridWorld(dm_env.Environment):
                         # bucket full 
                         self.carrying = 1
                         # +1 if dug were supposed, -1 otherwise
-                        reward = self.dig_reward()
+                        reward += self.dig_reward()
 
-
+        
 
             # Dump soil an object
             elif action == self.actions.drop:
@@ -508,8 +512,7 @@ class GridWorld(dm_env.Environment):
 
                         # bucket is empty
                         self.carrying = 0
-                        reward = self.dig_reward()
-
+                        reward += self.dig_reward()
 
 
 
@@ -526,17 +529,19 @@ class GridWorld(dm_env.Environment):
         #     pass
         
         # finished the escavation project
-
-        if np.sum(np.abs(self.obs[:, :, 1])) < eps:
-            print("Done excavation")
-            self._reset_next_step = True
-            return dm_env.termination(reward=1., observation=self._observation())
-        
+        # reward = -np.sum(np.abs(self.obs[:, :, 1]))/10
+        if not self._goal:
+            if np.sum(np.abs(self.obs[:, :, 1])) < eps:
+                print("Done excavation")
+                self._reset_next_step = True
+                return dm_env.termination(reward=10., observation=self._observation())
+            
         if self.step_count >= self.max_steps:
             # print("Termination ")
+            print("Block remaining ", np.sum(np.abs(self.obs[:, :, 1])))
             return dm_env.termination(reward=reward, observation=self._observation())
 
-        
+        # print("reward ", reward)
         return dm_env.transition(reward=reward, observation=self._observation())
 
     @classmethod

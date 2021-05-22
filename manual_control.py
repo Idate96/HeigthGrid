@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-from heightgrid.envs.hole import Hole, HoleEnv5x5
-from heightgrid.envs.random_height import RandomHeightEnv5x5
+from numpy import random
+from heightgrid.dm_envs.hole import Hole, HoleEnv5x5
+# from heightgrid.dm_envs.random_height import RandomHeightEnv5x5
 from matplotlib.pyplot import grid
-from heightgrid.envs.empty import EmptyEnv32x32, EmptyEnv5x5
+from heightgrid.dm_envs.empty import EmptyEnv32x32, EmptyEnv5x5, EmptyRandomEnv5x5
 import time
 import argparse
 import numpy as np
@@ -82,8 +83,15 @@ def key_handler(event):
         parse_step(obs, reward, done, info)
         return
 
+    if event.key == 'backspace':
+        print("resetting")
+        parse_step(0, 0, 0, 0)
+
     if event.key == 'enter':
-        obs, reward, done, info = step(env.actions.done)
+        # obs, reward, done, info =  (env.actions.done)
+        print("resetting")
+        env.reset()
+        redraw()
         return
 
 
@@ -131,19 +139,19 @@ args = parser.parse_args()
 # grid_height[1, 3] = 1
 # env = gym.make(args.env)
 # env = EmptyEnv5x5()
-env = HoleEnv5x5()
+env = EmptyEnv5x5(random=True)
 env.reset()
-if args.agent_view:
-    env = FullyObsWrapper(env)
+# if args.agent_view:
+#     env = FullyObsWrapper(env)
     # env = ImgObsWrapper(env)
 
-# window = Window('heightgrid - ' + args.env)
+window = Window('heightgrid - ' + args.env)
 env.render(block=True, key_handler=key_handler)
 # env.window.reg_key_handler(key_handler)
 # env.window_target.reg_key_handler(key_handler)
 
-# reset()
+# # reset()
 
-# # Blocking event loop
+# # # Blocking event loop
 # env.window.show(block=True)
 # env.window_target.show(block=True)

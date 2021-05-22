@@ -14,13 +14,15 @@ class Hole(GridWorld):
         target_grid_height,
         agent_start_pos=(0,0),
         agent_start_dir=0,
+        max_steps=100
     ):
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
 
         super().__init__(
             target_grid_height=target_grid_height,
-            grid_height=grid_height
+            grid_height=grid_height,
+            max_steps=max_steps
         )
 
     def reset(self, agent_pose=(0, 0, 0)):
@@ -31,6 +33,29 @@ class Hole(GridWorld):
         self.agent_position = self.agent_start_pos
         self.agent_dir = self.agent_start_dir
         return restart
+
+
+
+class HoleEnv5x5_1x1(Hole):
+    def __init__(self, **kwargs):
+        grid_height = np.zeros((5, 5))
+        zero_height_pos = np.where(grid_height == 0)
+        target_map = np.zeros((5, 5))
+        target_map = create_rectangle(target_map, (1, 1), (1, 1), value=-1)
+        target_map = create_rectangle(target_map, (1, 1), (3, 1), value=1)
+
+        super().__init__(grid_height=grid_height, 
+                         target_grid_height=target_map,
+                         agent_start_pos=(zero_height_pos[0][0], zero_height_pos[1][0]),
+                        **kwargs)
+    def reset(self):
+        zero_height_pos = np.where(self.grid_height == 0)
+        idx = np.random.randint(len(zero_height_pos[0]))
+        agent_position = (zero_height_pos[0][idx], zero_height_pos[1][idx])
+        agent_orientation = np.random.randint(0, 4)
+        restart = super().reset((*agent_position, agent_orientation))
+        return restart
+        # self.place_obj_at_pos(Goal(), np.array([4, 4]))
 
 
 class HoleEnv5x5(Hole):
@@ -67,6 +92,7 @@ class HoleEnv32x32(Hole):
         super().__init__(grid_height=grid_height, 
                          target_grid_height=target_map,
                          agent_start_pos=(zero_height_pos[0][0], zero_height_pos[1][0]),
+                         max_steps=256,
                         **kwargs)
     def reset(self):
         zero_height_pos = np.where(self.grid_height == 0)
