@@ -3,6 +3,21 @@ from heightgrid.dm_heightgrid import *
 from heightgrid.register import register
 
 
+class EmptyActions(IntEnum):
+    # Turn left, turn right, move forward
+    left = 0
+    right = 1
+    forward = 2
+
+    # dig in the cell in from of you 
+    # dig = 3
+    # Drop an soil that was dug
+    # drop = 4
+    # make a ramp 
+    # toggle = 5
+
+    # Done completing task
+    # done = 6
 class FlatEnv(GridWorld):
     """
     Empty grid environment, no obstacles, sparse reward
@@ -25,6 +40,9 @@ class FlatEnv(GridWorld):
             max_steps=max_steps
         )
 
+        # dont allow digging
+        self._actions = EmptyActions
+
     def reset(self, agent_pose=(0,0,0)):
         restart = super().reset(agent_pose=agent_pose)
         self.agent_start_pos = (agent_pose[0], agent_pose[1])
@@ -41,6 +59,28 @@ class FlatEnv(GridWorld):
         while random_pos_goal == agent_id:
             random_pos_goal = np.random.randint(self.x_dim * self.y_dim)
         return np.array([random_pos_goal // self.x_dim, random_pos_goal % self.y_dim])
+
+     
+    def observation_spec(self):
+        """Returns the observation space
+        """
+        dict_ = {
+            'grid': specs.Array(shape=(self.x_dim, self.y_dim, 1), dtype=np.float32, name="grid"),
+            'state': specs.Array(shape=(3,), dtype=np.float32, name='state')
+        }
+        return dict_
+    
+    def action_spec(self):
+        """Return action spec"""
+        return specs.DiscreteArray(len(self._actions), dtype=np.int32, name="actions")
+
+
+    def _observation(self):
+        obs = {'grid': np.expand_dims(self.obs[:, :, 2], axis=2),
+               'state': np.hstack((DIR_TO_VEC[self.agent_dir], self.carrying))}
+        # print("state ", obs['state'])
+        return obs
+
 
 class EmptyEnv5x5(FlatEnv):
     def __init__(self, random=False, **kwargs):
@@ -131,6 +171,49 @@ class EmptyRandomEnv8x8(FlatEnv):
     def reset(self):
         i = np.random.randint(0, 8)
         j = np.random.randint(0, 8)
+        k = np.random.randint(0, 4)
+        restart = super().reset(agent_pose=(i, j, k))
+        goal_pos = self.goal_pos([i, j])
+        print("goal ", goal_pos)
+        self.place_obj_at_pos(Goal(), goal_pos)
+        return restart
+
+
+
+class EmptyEnv14x14(FlatEnv):
+    def __init__(self, random=False, **kwargs):
+        super().__init__(grid_height=np.zeros((16, 16)), 
+                         target_grid_height=np.zeros((16,16)),
+                         max_steps=256,
+                         **kwargs)
+        self.random=random
+        self._goal=True
+        self.place_obj_at_pos(Goal(), np.array([13, 4]))
+
+    
+    def reset(self):
+        i = np.random.randint(0, 13)
+        j = np.random.randint(0, 14)
+        k = np.random.randint(0, 4)
+        restart = super().reset(agent_pose=(i, j, k))
+        self.place_obj_at_pos(Goal(), np.array([15, 4]))
+        return restart
+
+
+class EmptyRandomEnv14x14(FlatEnv):
+    def __init__(self):
+        super().__init__(grid_height=np.zeros((14, 14)), 
+                         target_grid_height=np.zeros((14,14)),
+                         max_steps=256,
+                         agent_start_pos=None)
+        i = np.random.randint(0, 14)
+        j = np.random.randint(0, 14)
+        self.place_obj_at_pos(Goal(), np.array([i, j]))
+        self._goal=True
+    
+    def reset(self):
+        i = np.random.randint(0, 14)
+        j = np.random.randint(0, 14)
         k = np.random.randint(0, 4)
         restart = super().reset(agent_pose=(i, j, k))
         goal_pos = self.goal_pos([i, j])

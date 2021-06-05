@@ -1,8 +1,10 @@
-Metadata-Version: 2.1
+Metadata-Version: 1.0
 Name: heightgrid
 Version: 0.1
 Summary: Minimalistic grid map package for OpenAI Gym
 Home-page: UNKNOWN
+Author: UNKNOWN
+Author-email: UNKNOWN
 License: UNKNOWN
 Description: UNKNOWN
 Keywords: memory,environment,agent,rl,openaigym,openai-gym,gym
