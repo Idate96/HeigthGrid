@@ -14,11 +14,12 @@ class RandomHeights(GridWorld):
         target_grid_height,
         agent_start_pos=(1, 1),
         agent_start_dir=0,
+        **kwargs
     ):
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
 
-        super().__init__(target_grid_height=target_grid_height, grid_height=grid_height)
+        super().__init__(target_grid_height=target_grid_height, grid_height=grid_height, **kwargs)
 
     def reset(self):
         obs = super().reset(agent_pose=(*self.agent_start_pos, self.agent_start_dir))
