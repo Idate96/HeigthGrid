@@ -186,7 +186,7 @@ class AgentObj(GridObject):
 
 class GridWorld(gym.Env):
     tile_cache = {}
-
+    metadata = {'render.modes': ['rgb_array']}
     def __init__(
         self,
         grid_height: np.ndarray,
@@ -218,10 +218,9 @@ class GridWorld(gym.Env):
                 "image": spaces.Box(
                     low=-10, high=10, shape=(*np.shape(grid_height), 3), dtype=np.int8
                 ),
-                "agent_orientation": spaces.Box(
-                    low=0, high=1, shape=(2,), dtype=np.uint8
-                ),
-                "agent_carrying": spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
+                "vector": spaces.Box(
+                    low=0, high=1, shape=(3,), dtype=np.uint8
+                )            
             }
         )
 
@@ -326,11 +325,10 @@ class GridWorld(gym.Env):
 
         self.number_dig_sites = np.sum(np.abs(self.grid_target_rel))
         # print(self.grid_object)
-
+        vector_obs = np.insert(DIR_TO_VEC[self.agent_dir], 0, 2)
         obs = {
             "image": self.obs[:, :, :3],
-            "agent_orientation": DIR_TO_VEC[self.agent_dir],
-            "agent_carrying": 0,
+            "vector": vector_obs,
         }
 
         return obs
@@ -563,10 +561,10 @@ class GridWorld(gym.Env):
         if self.step_count >= self.max_steps:
             done = True
 
+        vector_obs = np.insert(DIR_TO_VEC[self.agent_dir], self.carrying, 2)
         obs = {
             "image": self.obs[:, :, :3],
-            "agent_orientation": DIR_TO_VEC[int(self.agent_dir)],
-            "agent_carrying": self.carrying,
+            "vector": vector_obs,
         }
 
         return obs, reward, done, {}
@@ -685,7 +683,7 @@ class GridWorld(gym.Env):
 
     def render(
         self,
-        mode="human",
+        mode="rgb_mode",
         close=False,
         block=False,
         key_handler=None,
@@ -703,7 +701,7 @@ class GridWorld(gym.Env):
                 self.window_target.close()
             return
 
-        if mode == "human" and not self.window:
+        if mode == "rgb_mode" and not self.window:
             self.window = heightgrid.window.Window("heightgrid")
             self.window_target = heightgrid.window.Window("relative target")
 
@@ -719,16 +717,17 @@ class GridWorld(gym.Env):
             self.agent_dir,
             render_objects=True,
         )
+        img = np.concatenate((img, img_target), axis=0)
 
-        if mode == "human":
+        if mode == "rgb_mode":
             # self.window.set_caption(self.mission)
             self.window.show_img(img)
-            self.window_target.show_img(img_target)
+            # self.window_target.show_img(img_target)
             # manually controlled
             if key_handler:
                 self.window.reg_key_handler(key_handler)
-                self.window_target.reg_key_handler(key_handler)
+                # self.window_target.reg_key_handler(key_handler)
                 self.window.show(block=block)
-                self.window_target.show(block=block)
+                # self.window_target.show(block=block)
 
-        return img, img_target
+        return img
