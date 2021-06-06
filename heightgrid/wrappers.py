@@ -102,6 +102,15 @@ class StateBonus(gym.core.Wrapper):
         return self.env.reset(**kwargs)
 
 
+class ImgTransposeWrapper(gym.core.ObservationWrapper):
+    def __init__(self, env) -> None:
+        super().__init__(env)
+
+    def observation(self, obs):
+        obs["image"] = obs["image"].T
+        return obs
+
+
 class ImgObsWrapper(gym.core.ObservationWrapper):
     """
     Use the image as the only observation output, no language/mission.
@@ -235,7 +244,7 @@ class FullyObsWrapper(gym.core.ObservationWrapper):
 
 class FlatObsSimpleWrapper(gym.core.ObservationWrapper):
     """
-    Provides a single flattned array of the state 
+    Provides a single flattned array of the state
     """
 
     def __init__(self, env):
@@ -243,7 +252,6 @@ class FlatObsSimpleWrapper(gym.core.ObservationWrapper):
 
         imgSpace = env.observation_space.spaces["image"]
         imgSize = imgSpace.shape[0] * imgSpace.shape[1] * 3
-
 
         # pos_size = imgSpace.shape[0] + imgSpace.shape[1]
 
@@ -257,18 +265,22 @@ class FlatObsSimpleWrapper(gym.core.ObservationWrapper):
         )
 
     def observation(self, obs):
-      image = obs["image"]
-      # encode agent position as two concatenated hot-encoded indexes
-      # i, j = np.where(image[:, :, 3] == 1)  # agent position
-      # m, n, c = image.shape
-      # # agent_pos = np.zeros((m + n,))
-      # # agent_pos[i] = 1
-      # # agent_pos[m + j] = 1
-      # print(image[:, :, 2])
-      obs_flatten = np.concatenate(
-          (image[:, :, :3].flatten('F'), obs["agent_orientation"], np.array((obs["agent_carrying"],)))
-      )
-      return obs_flatten
+        image = obs["image"]
+        # encode agent position as two concatenated hot-encoded indexes
+        # i, j = np.where(image[:, :, 3] == 1)  # agent position
+        # m, n, c = image.shape
+        # # agent_pos = np.zeros((m + n,))
+        # # agent_pos[i] = 1
+        # # agent_pos[m + j] = 1
+        # print(image[:, :, 2])
+        obs_flatten = np.concatenate(
+            (
+                image[:, :, :3].flatten("F"),
+                obs["agent_orientation"],
+                np.array((obs["agent_carrying"],)),
+            )
+        )
+        return obs_flatten
 
 
 class FlatObsWrapper(gym.core.ObservationWrapper):
