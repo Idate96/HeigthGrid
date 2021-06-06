@@ -19,7 +19,9 @@ class RandomHeights(GridWorld):
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
 
-        super().__init__(target_grid_height=target_grid_height, grid_height=grid_height, **kwargs)
+        super().__init__(
+            target_grid_height=target_grid_height, grid_height=grid_height, **kwargs
+        )
 
     def reset(self):
         obs = super().reset(agent_pose=(*self.agent_start_pos, self.agent_start_dir))
@@ -77,58 +79,69 @@ class RandomTargetHeightEnv8x8(RandomHeights):
 
 
 class RandomTargetHeightEnv(RandomHeights):
-  def __init__(self, size, num_digging_pts, **kwargs):
-      self.size = size
-      self.num_digging_pts = num_digging_pts
+    def __init__(self, size, num_digging_pts, **kwargs):
+        self.size = size
+        self.num_digging_pts = num_digging_pts
 
-      target_height = self.generate_grid()
-      # zero_height_pos = np.where(grid_height == 0)
+        target_height = self.generate_grid()
+        # zero_height_pos = np.where(grid_height == 0)
 
-      super().__init__(
-          grid_height=np.zeros((size, size)),
-          target_grid_height=target_height,
-          agent_start_pos=(
-              np.random.randint(0, size),
-              np.random.randint(0, size),
-          ),
-          **kwargs
-      )
+        super().__init__(
+            grid_height=np.zeros((size, size)),
+            target_grid_height=target_height,
+            agent_start_pos=(
+                np.random.randint(0, size),
+                np.random.randint(0, size),
+            ),
+            **kwargs
+        )
 
-      # self.place_obj_at_pos(Goal(), np.array([4, 4]))
-  def generate_grid(self):
-    random_idx_dig = np.random.choice(self.size ** 2, self.num_digging_pts, replace=False)
-    random_idx_dump = np.random.choice(self.size ** 2, self.num_digging_pts, replace=False)
-    
-    # prevent overlapping of sites
-    while np.allclose(random_idx_dig, random_idx_dump):
-      random_idx_dump = np.random.choice(self.size ** 2, self.num_digging_pts, replace=False)
+        # self.place_obj_at_pos(Goal(), np.array([4, 4]))
 
+    def generate_grid(self):
+        random_idx_dig = np.random.choice(
+            self.size ** 2, self.num_digging_pts, replace=False
+        )
+        random_idx_dump = np.random.choice(
+            self.size ** 2, self.num_digging_pts, replace=False
+        )
 
-    x_idx = np.zeros((self.num_digging_pts,), dtype=int)
-    y_idx = np.zeros((self.num_digging_pts,), dtype=int)
+        # prevent overlapping of sites
+        overlapping = np.intersect1d(random_idx_dig, random_idx_dump)
+        print(overlapping)
+        while overlapping.size > 0:
+            random_idx_dump = np.random.choice(
+                self.size ** 2, self.num_digging_pts, replace=False
+            )
+            overlapping = np.intersect1d(random_idx_dig, random_idx_dump)
 
-    x_idx_dump = np.zeros((self.num_digging_pts,), dtype=int)
-    y_idx_dump = np.zeros((self.num_digging_pts,), dtype=int)
+        x_idx = np.zeros((self.num_digging_pts,), dtype=int)
+        y_idx = np.zeros((self.num_digging_pts,), dtype=int)
 
-    for i in range(len(random_idx_dig)):
-        x_idx[i] = random_idx_dig[i] // self.size
-        y_idx[i] = random_idx_dig[i] % self.size
+        x_idx_dump = np.zeros((self.num_digging_pts,), dtype=int)
+        y_idx_dump = np.zeros((self.num_digging_pts,), dtype=int)
 
-        x_idx_dump[i] = random_idx_dump[i] // self.size
-        y_idx_dump[i] = random_idx_dump[i] % self.size
+        for i in range(len(random_idx_dig)):
+            x_idx[i] = random_idx_dig[i] // self.size
+            y_idx[i] = random_idx_dig[i] % self.size
 
-    target_height = np.zeros((self.size, self.size))
-    target_height[x_idx, y_idx] = -1
-    target_height[x_idx_dump, y_idx_dump] = 1
-    return target_height
+            x_idx_dump[i] = random_idx_dump[i] // self.size
+            y_idx_dump[i] = random_idx_dump[i] % self.size
 
-  def reset(self):
-    self.grid_target = self.generate_grid()
-    agent_pos_idx = np.random.choice(self.size ** 2, 1, replace=False)
-    self.agent_start_pos = (int(agent_pos_idx // self.size), int(agent_pos_idx % self.size))
-    self.agent_start_dir = np.random.randint(0, 4)
-    return super().reset()
+        target_height = np.zeros((self.size, self.size))
+        target_height[x_idx, y_idx] = -1
+        target_height[x_idx_dump, y_idx_dump] = 1
+        return target_height
 
+    def reset(self):
+        self.grid_target = self.generate_grid()
+        agent_pos_idx = np.random.choice(self.size ** 2, 1, replace=False)
+        self.agent_start_pos = (
+            int(agent_pos_idx // self.size),
+            int(agent_pos_idx % self.size),
+        )
+        self.agent_start_dir = np.random.randint(0, 4)
+        return super().reset()
 
 
 register(

@@ -23,10 +23,10 @@ from heightgrid.window import Window
 
 def redraw():
     if not args.agent_view:
-        img, img_target = env.render("rgb_array", tile_size=args.tile_size)
+        img = env.render("rgb_array", tile_size=args.tile_size)
 
     env.window.show_img(img)
-    env.window_target.show_img(img_target)
+    # env.window_target.show_img(img_target)
 
 
 def reset():
@@ -142,7 +142,7 @@ args = parser.parse_args()
 # env = gym.make(args.env)
 # env = EmptyEnv5x5()
 
-env = RandomTargetHeightEnv(size=5, num_digging_pts=1)
+env = RandomTargetHeightEnv(size=8, num_digging_pts=4)
 env.seed(24)
 env.reset()
 # if args.agent_view:
