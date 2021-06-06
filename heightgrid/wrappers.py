@@ -105,6 +105,17 @@ class StateBonus(gym.core.Wrapper):
 class ImgTransposeWrapper(gym.core.ObservationWrapper):
     def __init__(self, env) -> None:
         super().__init__(env)
+        shape_space = self.observation_space['image'].shape
+        self.observation_space = spaces.Dict(
+        {
+            "image": spaces.Box(
+                low=-10, high=10, shape=(shape_space[2], shape_space[1], shape_space[0]), dtype=np.int8
+            ),
+            "vector": spaces.Box(
+                low=0, high=1, shape=(3,), dtype=np.uint8
+            )            
+        }
+      ) 
 
     def observation(self, obs):
         obs["image"] = obs["image"].T
