@@ -108,7 +108,6 @@ class RandomTargetHeightEnv(RandomHeights):
 
         # prevent overlapping of sites
         overlapping = np.intersect1d(random_idx_dig, random_idx_dump)
-        print(overlapping)
         while overlapping.size > 0:
             random_idx_dump = np.random.choice(
                 self.size ** 2, self.num_digging_pts, replace=False
