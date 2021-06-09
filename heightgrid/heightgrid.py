@@ -186,7 +186,8 @@ class AgentObj(GridObject):
 
 class GridWorld(gym.Env):
     tile_cache = {}
-    metadata = {'render.modes': ['rgb_array']}
+    metadata = {"render.modes": ["rgb_array"]}
+
     def __init__(
         self,
         grid_height: np.ndarray,
@@ -194,6 +195,7 @@ class GridWorld(gym.Env):
         step_cost: float = -0.05,
         max_steps: int = 256,
         seed=24,
+        mask: bool = False,
     ) -> None:
         super().__init__()
         assert np.shape(grid_height) == np.shape(target_grid_height)
@@ -201,6 +203,7 @@ class GridWorld(gym.Env):
         self.action_space = spaces.Discrete(len(Actions))
         # print(len(Actions))
         self.actions = Actions
+        self.num_actions = len(Actions)
         # these values are not modified during run time
         self.grid_height = grid_height
         self.height, self.width = grid_height.shape[0], grid_height.shape[1]
@@ -211,27 +214,42 @@ class GridWorld(gym.Env):
         self.grid_object = [None] * (self.x_dim * self.y_dim)
         # encode position and orientation of objects
         # self.grid_object_pose = np.zeros((self.x_dim, self.y_dim, 2))
+        self.carrying = 0
 
         # current grid height, relative target height, current obj pos, current obj orientation
-        self.observation_space = spaces.Dict(
-            {
-                "image": spaces.Box(
-                    low=-10, high=10, shape=(*np.shape(grid_height), 3), dtype=np.int8
-                ),
-                "vector": spaces.Box(
-                    low=0, high=1, shape=(3,), dtype=np.uint8
-                )            
-            }
-        )
-
+        if mask:
+            self.observation_space = spaces.Dict(
+                {
+                    "image": spaces.Box(
+                        low=-10,
+                        high=10,
+                        shape=(*np.shape(grid_height), 3),
+                        dtype=np.int8,
+                    ),
+                    "vector": spaces.Box(low=0, high=1, shape=(3,), dtype=np.uint8),
+                    "mask": spaces.MultiBinary(len(Actions)),
+                }
+            )
+        else:
+            self.observation_space = spaces.Dict(
+                {
+                    "image": spaces.Box(
+                        low=-10,
+                        high=10,
+                        shape=(*np.shape(grid_height), 3),
+                        dtype=np.int8,
+                    ),
+                    "vector": spaces.Box(low=0, high=1, shape=(3,), dtype=np.uint8),
+                }
+            )
         # self.observation_space = spaces.Box(low=0, high=255, shape=(*np.shape(grid_height), 4), dtype=np.uint8)
         self.obs = np.zeros((self.x_dim, self.y_dim, 4))
 
+        self.mask = mask
         self.max_steps = max_steps
 
         self.seed(seed=seed)
 
-        self.reset()
         self.obs = np.zeros((*np.shape(grid_height), 4))
         # array with two coordinates
         self.agent_pos = None
@@ -290,6 +308,30 @@ class GridWorld(gym.Env):
             front_pos = None
         return front_pos
 
+    @property
+    def action_mask(self):
+        available_actions = np.ones((self.num_actions,), dtype=np.uint8)
+
+        fwd_pos = self.front_pos
+
+        if self.in_bounds(fwd_pos):
+            # Get the contents of the cell in front of the agent
+            if self.carrying:
+                available_actions[self.actions.dig] = 0
+            else:
+                available_actions[self.actions.drop] = 0
+
+            if self.obs[fwd_pos[0], fwd_pos[1], 1] > -0.5:
+                available_actions[self.actions.dig] = 0
+
+            if self.obs[fwd_pos[0], fwd_pos[1], 1] < 0.5:
+                available_actions[self.actions.drop] = 0
+        else:
+            available_actions[self.actions.dig] = 0
+            available_actions[self.actions.drop] = 0
+
+        return available_actions
+
     def __str__(self):
         repre = "Height " + 10 * "-" + "\n"
         repre += np.array2string(self.obs[:, :, 0])
@@ -304,6 +346,24 @@ class GridWorld(gym.Env):
         )
         repre += "Full bucket " + str(self.carrying)
         return repre
+
+    @property
+    def _observation(self):
+        vector_obs = np.insert(DIR_TO_VEC[self.agent_dir], self.carrying, 2)
+
+        if self.mask:
+            obs = {
+                "image": self.obs[:, :, :3],
+                "vector": vector_obs,
+                "mask": self.action_mask,
+            }
+        else:
+            obs = {
+                "image": self.obs[:, :, :3],
+                "vector": vector_obs,
+            }
+
+        return obs
 
     def reset(self, agent_pose: tuple = (0, 0, 0)):
         # add agent to the observation space
@@ -325,13 +385,7 @@ class GridWorld(gym.Env):
 
         self.number_dig_sites = np.sum(np.abs(self.grid_target_rel))
         # print(self.grid_object)
-        vector_obs = np.insert(DIR_TO_VEC[self.agent_dir], 0, 2)
-        obs = {
-            "image": self.obs[:, :, :3],
-            "vector": vector_obs,
-        }
-
-        return obs
+        return self._observation
 
     def update_grid(self, grid_height: np.array, target_grid_height: np.array):
         """Vanilla implementation of the grid. More advanced world shoud consider randomization
@@ -518,27 +572,27 @@ class GridWorld(gym.Env):
                     if self.carrying != 1:
                         # remove one unit of soild
                         if self.obs[fwd_pos[0], fwd_pos[1], 1] < -0.5:
-                          # print("dig")
-                          self.obs[fwd_pos[0], fwd_pos[1], 0] -= 1
-                          self.grid_target_rel = self.grid_target - self.obs[:, :, 0]
-                          # bucket full
-                          self.carrying = 1
-                          # +1 if dug were supposed, -1 otherwise
-                          reward += self.dig_reward()
+                            # print("dig")
+                            self.obs[fwd_pos[0], fwd_pos[1], 0] -= 1
+                            self.grid_target_rel = self.grid_target - self.obs[:, :, 0]
+                            # bucket full
+                            self.carrying = 1
+                            # +1 if dug were supposed, -1 otherwise
+                            reward += self.dig_reward()/10
 
             # Dump soil an object
             elif action == self.actions.drop:
                 if self.carrying == 1:
                     if not fwd_cell and self.can_dig(self.agent_pos, fwd_pos):
-                      if self.obs[fwd_pos[0], fwd_pos[1], 1] > 0.5:
-                        # increase height map where soil is dumped
-                        # print("dropp")
-                        self.obs[fwd_pos[0], fwd_pos[1], 0] += 1
-                        self.grid_target_rel = self.grid_target - self.obs[:, :, 0]
+                        if self.obs[fwd_pos[0], fwd_pos[1], 1] > 0.5:
+                            # increase height map where soil is dumped
+                            # print("dropp")
+                            self.obs[fwd_pos[0], fwd_pos[1], 0] += 1
+                            self.grid_target_rel = self.grid_target - self.obs[:, :, 0]
 
-                        # bucket is empty
-                        self.carrying = 0
-                        reward += self.dig_reward()
+                            # bucket is empty
+                            self.carrying = 0
+                            reward += self.dig_reward()/10
 
         #     # Toggle/activate an object
         #     elif action == self.actions.toggle:
@@ -556,18 +610,12 @@ class GridWorld(gym.Env):
                 # print("Done excavation")
                 # print("done")
                 done = True
-                reward = 10
+                reward = 1
 
         if self.step_count >= self.max_steps:
             done = True
 
-        vector_obs = np.insert(DIR_TO_VEC[self.agent_dir], self.carrying, 2)
-        obs = {
-            "image": self.obs[:, :, :3],
-            "vector": vector_obs,
-        }
-
-        return obs, reward, done, {}
+        return self._observation, reward, done, {}
 
     @classmethod
     def render_tile(

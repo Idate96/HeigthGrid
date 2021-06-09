@@ -114,7 +114,7 @@ def parse_step(obs, reward, done, info):
     # print("obs \n", obs)
 
     print("Reward :", reward)
-
+    print("mask ", obs["mask"])
     print("Done: ", done)
 
 
@@ -142,7 +142,7 @@ args = parser.parse_args()
 # env = gym.make(args.env)
 # env = EmptyEnv5x5()
 
-env = RandomTargetHeightEnv(size=8, num_digging_pts=4)
+env = RandomTargetHeightEnv(size=8, num_digging_pts=4, mask=True)
 env.seed(24)
 env.reset()
 # if args.agent_view:

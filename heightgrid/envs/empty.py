@@ -36,6 +36,7 @@ class FlatEnv(GridWorld):
         agent_start_dir=0,
         step_cost: float = -0.05,
         max_steps: int = 256,
+        **kwargs
     ):
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
@@ -45,6 +46,7 @@ class FlatEnv(GridWorld):
             grid_height=grid_height,
             max_steps=max_steps,
             step_cost=step_cost,
+            **kwargs
         )
 
         # dont allow digging
