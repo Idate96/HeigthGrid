@@ -196,7 +196,7 @@ class GridWorld(gym.Env):
         max_steps: int = 256,
         seed=24,
         mask: bool = False,
-        collition_cost:float = 0
+        collision_cost:float = 0
     ) -> None:
         super().__init__()
         assert np.shape(grid_height) == np.shape(target_grid_height)
@@ -565,7 +565,7 @@ class GridWorld(gym.Env):
                 else:
                     # for the moment restart on collision or fall into hole
                     if type(fwd_cell) != Ramp:
-                        reward -= self.collision_cost
+                        reward += self.collision_cost
 
             # dig soil
             elif action == self.actions.dig:
