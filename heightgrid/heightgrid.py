@@ -197,6 +197,7 @@ class GridWorld(gym.Env):
         seed=24,
         mask: bool = False,
         collision_cost: float = 0,
+        final_reward: float = 0
     ) -> None:
         super().__init__()
         assert np.shape(grid_height) == np.shape(target_grid_height)
@@ -249,6 +250,7 @@ class GridWorld(gym.Env):
         self.mask = mask
         self.max_steps = max_steps
         self.collision_cost = collision_cost
+        self.final_reward = final_reward
 
         self.seed(seed=seed)
 
@@ -615,7 +617,7 @@ class GridWorld(gym.Env):
                 # print("Done excavation")
                 # print("done")
                 done = True
-                reward = 1
+                reward = self.final_reward
 
         if self.step_count >= self.max_steps:
             done = True
