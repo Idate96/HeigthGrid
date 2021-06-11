@@ -196,7 +196,7 @@ class GridWorld(gym.Env):
         max_steps: int = 256,
         seed=24,
         mask: bool = False,
-        collision_cost:float = 0
+        collision_cost: float = 0,
     ) -> None:
         super().__init__()
         assert np.shape(grid_height) == np.shape(target_grid_height)
@@ -317,6 +317,8 @@ class GridWorld(gym.Env):
         fwd_pos = self.front_pos
 
         if self.in_bounds(fwd_pos):
+            if not self.is_traversable(self.agent_pos, fwd_pos):
+                available_actions[self.actions.forward] = 0
             # Get the contents of the cell in front of the agent
             if self.carrying:
                 available_actions[self.actions.dig] = 0
@@ -331,10 +333,8 @@ class GridWorld(gym.Env):
         else:
             available_actions[self.actions.dig] = 0
             available_actions[self.actions.drop] = 0
-
-        if not self.is_traversable(self.agent_pos, fwd_pos):
             available_actions[self.actions.forward] = 0
-            
+
         return available_actions
 
     def __str__(self):
@@ -583,7 +583,7 @@ class GridWorld(gym.Env):
                             # bucket full
                             self.carrying = 1
                             # +1 if dug were supposed, -1 otherwise
-                            reward += self.dig_reward()/10
+                            reward += self.dig_reward() / 10
 
             # Dump soil an object
             elif action == self.actions.drop:
@@ -597,7 +597,7 @@ class GridWorld(gym.Env):
 
                             # bucket is empty
                             self.carrying = 0
-                            reward += self.dig_reward()/10
+                            reward += self.dig_reward() / 10
 
         #     # Toggle/activate an object
         #     elif action == self.actions.toggle:
