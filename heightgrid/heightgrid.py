@@ -332,6 +332,9 @@ class GridWorld(gym.Env):
             available_actions[self.actions.dig] = 0
             available_actions[self.actions.drop] = 0
 
+        if not self.is_traversable(self.agent_pos, fwd_pos):
+            available_actions[self.actions.forward] = 0
+            
         return available_actions
 
     def __str__(self):
