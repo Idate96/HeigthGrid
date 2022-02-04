@@ -46,7 +46,7 @@ class ActionBonus(gym.core.Wrapper):
         obs, reward, done, info = self.env.step(action)
 
         env = self.unwrapped
-        tup = (tuple(env.agent_pos), env.agent_dir, action)
+        tup = (tuple(env.agent_pos), env.base_dir, action)
 
         # Get the count for this (s,a) pair
         pre_count = 0
@@ -249,7 +249,7 @@ class FullyObsWrapper(gym.core.ObservationWrapper):
         env = self.unwrapped
         full_grid = env.grid.encode()
         full_grid[env.agent_pos[0]][env.agent_pos[1]] = np.array(
-            [OBJECT_TO_IDX["agent"], COLOR_TO_IDX["red"], env.agent_dir]
+            [OBJECT_TO_IDX["agent"], COLOR_TO_IDX["red"], env.base_dir]
         )
 
         return {"mission": obs["mission"], "image": full_grid}

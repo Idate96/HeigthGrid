@@ -2,8 +2,25 @@ from heightgrid.heightgrid import *
 from heightgrid.register import register
 
 from numpy import random
-from heightgrid.heightgrid_v2 import *
+from heightgrid.heightgrid import *
 from heightgrid.register import register
+
+
+class EmptyActions(IntEnum):
+    # Turn left, turn right, move forward
+    left = 0
+    right = 1
+    forward = 2
+
+    # dig in the cell in from of you
+    # dig = 3
+    # Drop an soil that was dug
+    # drop = 4
+    # make a ramp
+    # toggle = 5
+
+    # Done completing task
+    # done = 6
 
 
 class FlatEnv(GridWorld):

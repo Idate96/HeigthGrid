@@ -4,6 +4,7 @@ heightgrid/__init__.py
 heightgrid/create_maps.py
 heightgrid/dm_heightgrid.py
 heightgrid/heightgrid.py
+heightgrid/heightgrid_v2.py
 heightgrid/register.py
 heightgrid/rendering.py
 heightgrid/window.py
@@ -15,5 +16,4 @@ heightgrid.egg-info/requires.txt
 heightgrid.egg-info/top_level.txt
 heightgrid/envs/__init__.py
 heightgrid/envs/empty.py
-heightgrid/envs/hole.py
 heightgrid/envs/random_height.py
