@@ -403,7 +403,7 @@ class GridWorld(gym.Env):
 
     @property
     def cabin_front_pos(self):
-        front_pos = self.agent_pos + DIR_TO_VEC_CABIN[(self.base_dir * 2 + self.cabin_dir) % 8]
+        front_pos = self.agent_pos + DIR_TO_VEC_CABIN[self.cabin_dir]
         if front_pos[0] > self.x_dim or front_pos[1] > self.y_dim:
             front_pos = None
         return front_pos
@@ -582,6 +582,8 @@ class GridWorld(gym.Env):
         return True
 
     def can_dig(self, target_pos):
+        print("base dir ", self.base_dir)
+        print("cabin dir ", self.cabin_dir)
         if target_pos[0] < 0 or target_pos[0] >= self.x_dim:
             return False
         if target_pos[1] < 0 or target_pos[1] >= self.y_dim:
@@ -589,7 +591,10 @@ class GridWorld(gym.Env):
         if target_pos is None:
             return False
         # not allowed if it is already dug
-        if self.image_obs[target_pos[0], target_pos[1], 0] == -1 or self.image_obs[target_pos[0], target_pos[1], 1] != 0:
+        if self.image_obs[target_pos[0], target_pos[1], 0] == -1. or self.image_obs[target_pos[0], target_pos[1], 1] != -1.:
+            print("Cannot dig here, already dug or not a dig site")
+            print("dig site ", target_pos)
+            print("has target value ", self.image_obs[target_pos[0], target_pos[1], 1])
             return False
         return True
 
