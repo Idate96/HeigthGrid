@@ -208,7 +208,6 @@ class GridWorld(gym.Env):
             self,
             heightgrid: np.ndarray,
             target_grid_height: np.ndarray,
-            dirt_grid: np.ndarray,
             step_reward: float = -0.05,
             max_steps: int = 256,
             seed=24,
@@ -225,19 +224,17 @@ class GridWorld(gym.Env):
         self.x_dim, self.y_dim = np.shape(heightgrid)
 
         # observations
-        self.image_obs = np.zeros((*np.shape(heightgrid), 3))
+        self.image_obs = np.zeros((*np.shape(heightgrid), 2))
         self.pos_x = np.zeros(self.x_dim)
         self.pos_y = np.zeros(self.y_dim)
         self.cabin_dir_ = np.zeros(8)
         self.base_dir_ = np.zeros(4)
-        self.bucket = np.zeros(2)
+        self.bucket = np.zeros(1)
 
         # these values are not modified during run time
         self.heigthgrid_0 = heightgrid
         self.grid_height = heightgrid
         self.grid_target = target_grid_height
-        self.dirt_grid_0 = dirt_grid
-        self.dirt_grid_curr = dirt_grid
         self.x_dim, self.y_dim = np.shape(heightgrid)
         # rendering
         self.grid_object = [None] * (self.x_dim * self.y_dim)
@@ -249,7 +246,7 @@ class GridWorld(gym.Env):
                 "image": spaces.Box(
                     low=-1,
                     high=1,
-                    shape=(self.x_dim, self.y_dim, 3),
+                    shape=(self.x_dim, self.y_dim, 2),
                     dtype=np.int8,
                 ),
                 # normalized x, y position of agent
@@ -393,13 +390,13 @@ class GridWorld(gym.Env):
             front_pos = None
         return front_pos
 
-    @property
-    def dirt_grid(self):
-        return self.image_obs[:, :, 2:]
-
-    @dirt_grid.setter
-    def dirt_grid(self, value):
-        self.image_obs[:, :, 2] = value
+    # @property
+    # def dirt_grid(self):
+    #     return self.image_obs[:, :, 2:]
+    #
+    # @dirt_grid.setter
+    # def dirt_grid(self, value):
+    #     self.image_obs[:, :, 2] = value
 
     def get_height(self, i, j):
         return self.grid_height[i, j]
@@ -436,8 +433,6 @@ class GridWorld(gym.Env):
         repre += np.array2string(self.image_obs[:, :, 0])
         repre += "\nRelative Height " + 10 * "-" + "\n"
         repre += np.array2string(self.image_obs[:, :, 1])
-        repre += "\nDirt " + 10 * "-" + "\n"
-        repre += np.array2string(self.image_obs[:, :, 2])
         repre += (
                 "Base orientation "
                 + np.array2string(DIR_TO_VEC_BASE[int(self.base_dir)])
@@ -472,7 +467,6 @@ class GridWorld(gym.Env):
     def reset(self, agent_pose: tuple = (0, 0, 0, 0)):
         # reset current height
         self.grid_height = self.heigthgrid_0
-        self.dirt_grid = self.dirt_grid_0
         self.agent_pos = agent_pose[:2]
         self.base_dir = agent_pose[2]
         self.cabin_dir = agent_pose[3]
@@ -565,9 +559,7 @@ class GridWorld(gym.Env):
         # if height diff is not approximately zero then it is not traversable
         if not np.isclose(heigth_diff, 0):
             return False
-        # if there is dirt in the way then it is not traversable
-        if self.dirt_grid[target_pos[0], target_pos[1]] > 0:
-            return False
+
         return True
 
     def can_dig(self, target_pos):
@@ -578,7 +570,7 @@ class GridWorld(gym.Env):
         if target_pos is None:
             return False
         # not allowed if it is already dug
-        if self.image_obs[target_pos[0], target_pos[1], 2] == 1:
+        if self.image_obs[target_pos[0], target_pos[1], 0] == 1:
             return True
 
         if self.image_obs[target_pos[0], target_pos[1], 0] == -1. or self.image_obs[target_pos[0], target_pos[1], 1] != -1.:
@@ -605,102 +597,9 @@ class GridWorld(gym.Env):
     def get_height(self, pos):
         return self.image_obs[pos[0], pos[1], 0]
 
-    def move_obj_pos(self, pos, fwd_pos, obj):
-        self.remove_obj_at_pos(pos)
-        self.image_obs[pos[0], pos[1], 2] = 0
-        self.image_obs[fwd_pos[0], fwd_pos[1], 2] = OBJECT_TO_IDX[obj.type]
-        self.place_obj_at_pos(obj, fwd_pos)
-
     def move_agent_pos(self, fwd_pos):
         self.move_obj_pos(self.agent_pos, fwd_pos, self.get(*self.agent_pos))
         self.agent_pos = fwd_pos
-
-    def place_ramp(self, curret_pos, target_pos):
-        # if a block has a higher height you can modify it to create a ramp
-        # if a block has lower height you cannot modify it to create a ramp
-        if -eps < self.get_height(target_pos) - self.get_height(curret_pos) < 1 + eps:
-            self.place_obj_at_pos(Ramp(), target_pos)
-
-    # def manhattan_distance(self, pos1, pos2):
-    #     return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
-    #
-    # def get_closest_dirt_sink(self, pos):
-    #     """
-    #     Find the coordinates of the closest point in the grid dirt map with value equal to -1.
-    #     """
-    #     # find the closest dirt sink
-    #     min_dist = np.inf
-    #     closest_dirt_sink = None
-    #     for i in range(self.x_dim):
-    #         for j in range(self.y_dim):
-    #             if self.dirt_grid[i, j] == -1:
-    #                 dist = self.manhattan_distance(pos, (i, j))
-    #                 if dist < min_dist:
-    #                     min_dist = dist
-    #                     closest_dirt_sink = (i, j)
-    #     return closest_dirt_sink, dist
-    #
-    # def create_sdf(self):
-    #     """Create a 2d signed distance field from the dirt grid
-    #     values of -1 are considered obstacle
-    #     """
-    #     # create a 2d grid of zeros
-    #     sdf = np.zeros((self.x_dim, self.y_dim))
-    #     # for each point in the grid
-    #     for i in range(self.x_dim):
-    #         for j in range(self.y_dim):
-    #             # if the point is an obstacle
-    #             closest_dirt_sink, dist = self.get_closest_dirt_sink((i, j))
-    #             sdf[i, j] = dist
-    #     return sdf
-
-    # def create_graph(self):
-    #     """Create a graph from the heightgrid.
-    #     Each node is assigned a value equal to the value of the dirt grid at location (i,j)
-    #     Each edge has value one if the height difference between the two nodes is less than 1
-    #     else the value is infinity (no edge)
-    #     """
-    #     # create a graph
-    #     graph = nx.Graph()
-    #     # add nodes to the graph
-    #     for i in range(self.x_dim):
-    #         for j in range(self.y_dim):
-    #             graph.add_node((i, j), height=self.image_obs[i, j, 3])
-    #     # add edges to the graph
-    #     for i in range(self.x_dim):
-    #         for j in range(self.y_dim):
-    #             # if the node is not an obstacle
-    #             if self.get_height((i, j)) != -1:
-    #                 # if the node is not on the edge of the grid
-    #                 if i != 0 and j != 0 and i != self.x_dim - 1 and j != self.y_dim - 1:
-    #                     # add an edge between the node and its neighbors
-    #                     graph.add_edge((i, j), (i - 1, j), weight=1 if self.get_height((i, j)) - self.get_height((i - 1, j)) < 1 else np.inf)
-    #                     graph.add_edge((i, j), (i + 1, j), weight=1 if self.get_height((i, j)) - self.get_height((i + 1, j)) < 1 else np.inf)
-    #                     graph.add_edge((i, j), (i, j - 1), weight=1 if self.get_height((i, j)) - self.get_height((i, j - 1)) < 1 else np.inf)
-    #                     graph.add_edge((i, j), (i, j + 1), weight=1 if self.get_height((i, j)) - self.get_height((i, j + 1)) < 1 else np.inf)
-    #                 # if the node is on the edge of the grid
-    #                 else:
-    #                     # add an edge between the node and its neighbors
-    #                     if i == 0:
-    #                         graph.add_edge((i, j), (i + 1, j), weight=1 if self.get_height((i, j)) - self.get_height((i + 1, j)) < 1 else np.inf)
-    #                     elif i == self.x_dim - 1:
-    #                         graph.add_edge((i, j), (i - 1, j), weight=1 if self.get_height((i, j)) - self.get_height((i - 1, j)) < 1 else np.inf)
-    #                     elif j == 0:
-    #                         graph.add_edge((i, j), (i, j + 1), weight=1 if self.get_height((i, j)) - self.get_height((i, j + 1)) < 1 else np.inf)
-    #                     elif j == self.y_dim - 1:
-    #                         graph.add_edge((i, j), (i, j - 1), weight=1 if self.get_height((i, j)) - self.get_height((i, j - 1)) < 1 else np.inf)
-    #     return graph
-    #
-    # def shortest_distance(self, start, goal_value):
-    #     """Find the node that has goal_value that is the closest to start"""
-    #     # create a graph
-    #     graph = self.create_graph()
-    #     # find the node that has goal_value that is the closest to start
-    #     dist, path = nx.dijkstra_predecessor_and_distance(graph, start, weight='weight')
-    #     for node in path:
-    #         if dist[node] == 1:
-    #             return node
-    #     return None
 
     def step(self, action):
         self.step_count += 1
@@ -742,11 +641,11 @@ class GridWorld(gym.Env):
             elif action == self.actions.do:
                 if self.can_dig(self.cabin_front_pos):
                     # check if there is dirt first
-                    if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 2] == 1:
+                    if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] == 1:
                         # # remove elevation
                         # self.image_obs[self.front_pos[0], self.front_pos[1], 0] = 0
                         # remove from dirt map
-                        self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 2] = 0
+                        self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = 0
                         # if it was in a +1 target location penalize else the agent will get stuck in a loop
                         if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
                             reward -= self.move_dirt_reward
@@ -775,7 +674,7 @@ class GridWorld(gym.Env):
                         if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
                             reward += self.move_dirt_reward
 
-                        self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 2] = 1
+                        self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = 1
                         self.bucket_full = 0
 
         # rotate
@@ -789,10 +688,8 @@ class GridWorld(gym.Env):
         excavation_mask = self.image_obs[:, :, 1] == -1
         height = self.image_obs[:, :, 0]
         target_height = self.image_obs[:, :, 1]
-        dirt_map = self.image_obs[:, :, 2]
 
-        if np.sum(target_height[excavation_mask] - height[excavation_mask]) == 0 and (
-                np.sum(dirt_map[excavation_mask]) == 0) and not self.bucket_full:
+        if np.sum(target_height[excavation_mask] - height[excavation_mask]) == 0 and not self.bucket_full:
             reward += self.terminal_reward
             done = True
 
@@ -893,6 +790,7 @@ class GridWorld(gym.Env):
             base_dir=None,
             cabin_dir=None,
             render_objects=True,
+            target_height=False
     ):
         """
         Render this grid at a given scale
@@ -914,7 +812,11 @@ class GridWorld(gym.Env):
                 else:
                     cell = None
 
-                agent_here = np.array_equal(agent_pos, (i, j))
+                if target_height:
+                    agent_here = False
+                else:
+                    agent_here = np.array_equal(agent_pos, (i, j))
+
                 tile_img = self.render_tile(
                     cell,
                     height_grid[i, j],
@@ -967,20 +869,16 @@ class GridWorld(gym.Env):
             self.base_dir,
             self.cabin_dir,
             render_objects=True,
+            target_height=True
         )
 
-        img_dirt = self.render_grid(
-            tile_size,
-            self.image_obs[:, :, 2],
-            self.agent_pos,
-            self.base_dir,
-            self.cabin_dir,
-            render_objects=True,
-        )
         # white row of pixels
         img_white = np.ones(shape=(tile_size * self.x_dim, tile_size, 3), dtype=np.uint8) * 255
 
-        img = np.concatenate((img, img_white, img_target, img_white, img_dirt), axis=1)
+        img = np.concatenate((img_white, img, img_white, img_target), axis=1)
+        # add a row of white pixels at the bottom
+        white_row = np.ones(shape=(tile_size, tile_size * self.y_dim * 2 + 2 * tile_size, 3), dtype=np.uint8) * 255
+        img = np.concatenate((img, white_row), axis=0)
 
         if key_handler:
             if mode == "rgb_mode":

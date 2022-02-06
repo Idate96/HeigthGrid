@@ -16,24 +16,25 @@ class HoleEnv7x7_3x3(GridWorld):
                    "cabin_turn_reward": -0.005,  # ok
                    "terminal_reward": 10}
 
-        heightgrid = np.zeros((5, 5))
+        heightgrid = np.zeros((7, 7))
         # target area is 3x3 centered and with value 1
-        target_map = np.ones((5, 5))
-        target_map[1:4, 1:4] = -1
+        target_map = np.ones((7, 7))
+        target_map[2:5, 2:5] = -1
         # excavation area is 3x3 centered and with value 1, outside -1
-        dirt_grid = np.zeros((5, 5))
 
         super().__init__(heightgrid=heightgrid,
                          target_grid_height=target_map,
-                         dirt_grid=dirt_grid,
                          rewards=rewards,
                         **kwargs)
 
     def reset(self):
-        agent_pose = (0, 0, 0, 0)
+        # pick a random position inside the grid
+        agent_pos = np.array([np.random.randint(0, self.grid_height.shape[0]),
+                              np.random.randint(0, self.grid_height.shape[1])])
+        # pick a random orientation
+        agent_pose = (agent_pos[0], agent_pos[1], np.random.randint(0, 4), np.random.randint(0, 8))
         obs = super().reset(agent_pose=agent_pose)
         return obs
-        # self.place_obj_at_pos(Goal(), np.array([4, 4]))
 
 
 class HoleEnv5x5_3x3(GridWorld):
@@ -54,16 +55,18 @@ class HoleEnv5x5_3x3(GridWorld):
         target_map = np.ones((5, 5))
         target_map[1:4, 1:4] = -1
         # excavation area is 3x3 centered and with value 1, outside -1
-        dirt_grid = np.zeros((5, 5))
 
         super().__init__(heightgrid=heightgrid,
                          target_grid_height=target_map,
-                         dirt_grid=dirt_grid,
                          rewards=rewards,
                         **kwargs)
 
     def reset(self):
-        agent_pose = (0, 0, 0, 0)
+        # pick a random position inside the grid
+        agent_pos = np.array([np.random.randint(0, self.grid_height.shape[0]),
+                              np.random.randint(0, self.grid_height.shape[1])])
+        # pick a random orientation
+        agent_pose = (agent_pos[0], agent_pos[1], np.random.randint(0, 4), np.random.randint(0, 8))
         obs = super().reset(agent_pose=agent_pose)
         return obs
         # self.place_obj_at_pos(Goal(), np.array([4, 4]))
@@ -101,14 +104,19 @@ class HoleEnv5x5_1x1(GridWorld):
         return obs
         # self.place_obj_at_pos(Goal(), np.array([4, 4]))
 
+register(
+    id="HeightGrid-Hole-7-3-v0",
+    entry_point='heightgrid.envs_v2:HoleEnv5x5_3x3'
+)
+
 
 register(
-    id="HeightGrid-Hole3-v0",
+    id="HeightGrid-Hole-5-3-v0",
     entry_point='heightgrid.envs_v2:HoleEnv5x5_3x3'
 )
 
 register(
-    id='HeightGrid-Hole1-v1',
+    id='HeightGrid-Hole-5-1-v1',
     entry_point='heightgrid.envs_v2:HoleEnv5x5_1x1'
 )
 
