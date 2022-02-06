@@ -2,10 +2,9 @@ from heightgrid.heightgrid_v2 import *
 from heightgrid.register import register
 from heightgrid.create_maps import create_rectangle
 
-
-class HoleEnv7x7_3x3(GridWorld):
-
+class TrenchEnv7x7_3x1(GridWorld):
     def __init__(self, **kwargs):
+
         rewards = {"collision_reward": -0.01,  # against wall 0, ok
                    "longitudinal_step_reward": -0.01,
                    "base_turn_reward": -0.02,  # ok
@@ -36,7 +35,7 @@ class HoleEnv7x7_3x3(GridWorld):
         # self.place_obj_at_pos(Goal(), np.array([4, 4]))
 
 
-class HoleEnv5x5_3x3(GridWorld):
+class TrenchEnv5x5_3x3(GridWorld):
     def __init__(self, **kwargs):
 
         rewards = {"collision_reward": -0.01,  # against wall 0, ok
@@ -45,7 +44,7 @@ class HoleEnv5x5_3x3(GridWorld):
                    "dig_reward": 1,  # ok
                    "dig_wrong_reward": -2,  # ok
                    "move_dirt_reward": 1,
-                   "existence_reward": -0.05,  # ok
+                   "existence_reward": -0.005,  # ok
                    "cabin_turn_reward": -0.005,  # ok
                    "terminal_reward": 10}
 
@@ -69,7 +68,7 @@ class HoleEnv5x5_3x3(GridWorld):
         # self.place_obj_at_pos(Goal(), np.array([4, 4]))
 
 
-class HoleEnv5x5_1x1(GridWorld):
+class TrenchEnv5x5_1x1(GridWorld):
     def __init__(self, **kwargs):
 
         rewards = {"collision_reward": -0.01,  # against wall 0, ok
@@ -78,7 +77,7 @@ class HoleEnv5x5_1x1(GridWorld):
                    "dig_reward": 1,  # ok
                    "dig_wrong_reward": -2,  # ok
                    "move_dirt_reward": 1,
-                   "existence_reward": -0.05,  # ok
+                   "existence_reward": -0.005,  # ok
                    "cabin_turn_reward": -0.005,  # ok
                    "terminal_reward": 10}
 

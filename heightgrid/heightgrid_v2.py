@@ -28,7 +28,7 @@ class Actions(IntEnum):
 
 eps = 10 ** -7
 
-SIZE_TILE_PIXELS = 32
+SIZE_TILE_PIXELS = 8
 
 # Map of color names to RGB values
 COLORS = {
@@ -255,11 +255,11 @@ class GridWorld(gym.Env):
                 # normalized x, y position of agent
                 # orientation of the cabin
                 # bucket state
-                "pos_x": spaces.Discrete(self.x_dim),
-                "pos_y": spaces.Discrete(self.y_dim),
-                "base_orientation": spaces.Discrete(4),
-                "cabin_dir": spaces.Discrete(8),
-                "bucket": spaces.Discrete(2)
+                "vector": spaces.MultiBinary(self.x_dim +
+                                             self.y_dim +
+                                             4 +
+                                             8 +
+                                             1),
             }
         )
 
@@ -364,21 +364,6 @@ class GridWorld(gym.Env):
         self.cabin_dir_ = vector_dir
 
     @property
-    def bucket_full(self):
-        """
-        Transforms 1-hot encoding of bucket into an int
-        """
-        return np.argmax(self.bucket)
-
-    @bucket_full.setter
-    def bucket_full(self, bucket):
-        """
-        Transforms an int into 1-hot encoding of bucket
-        """
-        self.bucket = np.zeros(2)
-        self.bucket[bucket] = 1
-
-    @property
     def grid_height(self):
         return self.image_obs[:, :, 0]
 
@@ -469,14 +454,19 @@ class GridWorld(gym.Env):
 
     @property
     def _observation(self):
+        vector_obs = np.concatenate([
+            self.pos_x,
+            self.pos_y,
+            self.base_dir_,
+            self.cabin_dir_,
+            np.array([self.bucket_full])
+        ])
+
         obs = {
             "image": self.image_obs,
-            "pos_x": self.pos_x,
-            "pos_y": self.pos_y,
-            "base_dir": self.base_dir_,
-            "cabin_dir": self.cabin_dir_,
-            "bucket": self.bucket
+            "vector": vector_obs
         }
+
         return obs
 
     def reset(self, agent_pose: tuple = (0, 0, 0, 0)):
@@ -486,6 +476,7 @@ class GridWorld(gym.Env):
         self.agent_pos = agent_pose[:2]
         self.base_dir = agent_pose[2]
         self.cabin_dir = agent_pose[3]
+
         if self.render_env:
             self.place_obj_at_pos(AgentObj(), agent_pose[:2])
         # self.grid_object_pose[self.agent_pos[0], self.agent_pos[1], 0] = OBJECT_TO_IDX[
@@ -573,17 +564,13 @@ class GridWorld(gym.Env):
             target_pos[0], target_pos[1], 0]
         # if height diff is not approximately zero then it is not traversable
         if not np.isclose(heigth_diff, 0):
-            print("Moving to a different height not allowed")
             return False
         # if there is dirt in the way then it is not traversable
         if self.dirt_grid[target_pos[0], target_pos[1]] > 0:
-            print("Moving on top of dirt not allowed!")
             return False
         return True
 
     def can_dig(self, target_pos):
-        print("base dir ", self.base_dir)
-        print("cabin dir ", self.cabin_dir)
         if target_pos[0] < 0 or target_pos[0] >= self.x_dim:
             return False
         if target_pos[1] < 0 or target_pos[1] >= self.y_dim:
@@ -591,11 +578,12 @@ class GridWorld(gym.Env):
         if target_pos is None:
             return False
         # not allowed if it is already dug
+        if self.image_obs[target_pos[0], target_pos[1], 2] == 1:
+            return True
+
         if self.image_obs[target_pos[0], target_pos[1], 0] == -1. or self.image_obs[target_pos[0], target_pos[1], 1] != -1.:
-            print("Cannot dig here, already dug or not a dig site")
-            print("dig site ", target_pos)
-            print("has target value ", self.image_obs[target_pos[0], target_pos[1], 1])
             return False
+
         return True
 
         # no_objects = self.get(*target_pos) is None
@@ -781,14 +769,14 @@ class GridWorld(gym.Env):
                 if self.can_drop(self.cabin_front_pos):
                     # if it drops it on previusly excavated area
                     if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] == -1:
-                        reward -= self.dig_reward
+                        reward -= 0.1 * self.dig_reward
+                    else:
+                        # if drops dirt on target elevation +1 (no problem with dirt)
+                        if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
+                            reward += self.move_dirt_reward
 
-                    # if drops dirt on target elevation +1 (no problem with dirt)
-                    if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
-                        reward += self.move_dirt_reward
-
-                    self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 2] = 1
-                    self.bucket_full = 0
+                        self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 2] = 1
+                        self.bucket_full = 0
 
         # rotate
         if action == self.actions.rotate_cabin_clock:
@@ -990,17 +978,16 @@ class GridWorld(gym.Env):
             render_objects=True,
         )
         # white row of pixels
-        img_white = np.ones(shape=(tile_size, tile_size * self.x_dim, 3), dtype=np.uint8) * 255
+        img_white = np.ones(shape=(tile_size * self.x_dim, tile_size, 3), dtype=np.uint8) * 255
 
-        img = np.concatenate((img, img_white, img_target, img_white, img_dirt), axis=0)
+        img = np.concatenate((img, img_white, img_target, img_white, img_dirt), axis=1)
 
-
-        if mode == "rgb_mode":
-            # self.window.set_caption(self.mission)
-            self.window.show_img(img)
-            # self.window_target.show_img(img_target)
-            # manually controlled
-            if key_handler:
+        if key_handler:
+            if mode == "rgb_mode":
+                # self.window.set_caption(self.mission)
+                self.window.show_img(img)
+                # self.window_target.show_img(img_target)
+                # manually controlled
                 self.window.reg_key_handler(key_handler)
                 # self.window_target.reg_key_handler(key_handler)
                 self.window.show(block=block)

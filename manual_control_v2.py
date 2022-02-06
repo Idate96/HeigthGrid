@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from heightgrid.envs_v2.hole import HoleEnv5x5_1x1
+from heightgrid.envs_v2.hole import HoleEnv5x5_1x1, HoleEnv5x5_3x3
 import argparse
 
 
@@ -130,7 +130,7 @@ rewards = {"collision_reward": -1, # against wall 0, ok
            "cabin_turn_reward": -0.05, # ok
            "terminal_reward": 10}
 
-env = HoleEnv5x5_1x1(rewards)
+env = HoleEnv5x5_3x3()
 print(env)
 env.seed(24)
 env.reset()
