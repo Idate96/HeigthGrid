@@ -68,7 +68,7 @@ class ProceduralTrenchEnv(GridWorld):
             # print("occupied space: ", occupied_space)
         target_map_0 = np.rot90(target_map_0, np.random.randint(0, 4))
 
-        self.reward_scaling = self.min_trench_length / num_blocks
+        self.reward_scaling = self.min_trench_length / (self.level + 2)
         return target_map_0
 
     def level_up(self):

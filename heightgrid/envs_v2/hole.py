@@ -66,7 +66,7 @@ class ProceduralBasementEnv(GridWorld):
             # print("occupied space: ", occupied_space)
         target_map_0 = np.rot90(target_map_0, np.random.randint(0, 4))
 
-        self.reward_scaling = self.min_trench_length / num_blocks
+        self.reward_scaling = self.min_trench_length / self.level
         return target_map_0
 
     def level_up(self):
@@ -96,7 +96,7 @@ class ProceduralBasementEnv(GridWorld):
         rewards = {}
         for (k, v) in self.global_rewards.items():
             # except for the reward scaling and terminal reward
-            if k != "reward_scaling" and k != "terminal_reward":
+            if k == "dig_reward" and k != "move_dirt_reward":
                 rewards[k] = v * self.reward_scaling
             else:
                 rewards[k] = v
