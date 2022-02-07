@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from heightgrid.envs_v2.hole import HoleEnv5x5_1x1, HoleEnv5x5_3x3, HoleEnv7x7_3x3
+from heightgrid.envs_v2.hole import HoleEnv5x5_1x1, HoleEnv5x5_3x3, HoleEnv7x7_3x3, ProceduralBasementEnv
 from heightgrid.envs_v2.trench import TrenchEnv7x7_3x1, TrenchEnv5x5_1x1, TrenchEnv5x5_3x1, ProceduralTrenchEnv
 import argparse
 
@@ -43,7 +43,8 @@ def key_handler(event):
         env.window_target.close()
 
     if event.key == "backspace":
-        reset()
+        env.level_up()
+        env.reset()
 
     if event.key == "left":
         obs, reward, done, info = env.step(env.actions.rotate_base_counter)
@@ -110,7 +111,7 @@ parser.add_argument(
     "--tile_size", type=int, help="size at which to render tiles", default=32
 )
 parser.add_argument(
-    "--agent_view", 
+    "--agent_view",
     default=False,
     help="draw the agent sees (partially observable view)",
     action="store_true",
@@ -132,10 +133,10 @@ rewards = {"collision_reward": -1, # against wall 0, ok
            "cabin_turn_reward": -0.05, # ok
            "terminal_reward": 10}
 
-env = ProceduralTrenchEnv()
+env = ProceduralBasementEnv()
 print(env)
 env.seed(24)
-env.reset()
+env.level_up()
 # if args.agent_view:
 #     env = FullyObsWrapper(env)
 # env = ImgObsWrapper(env)

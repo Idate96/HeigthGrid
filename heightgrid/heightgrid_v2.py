@@ -464,12 +464,29 @@ class GridWorld(gym.Env):
 
         return obs
 
-    def reset(self, agent_pose: tuple = (0, 0, 0, 0)):
+    def reset(self, agent_pose: tuple = (0, 0, 0, 0), target_map: np.array = None, rewards: dict = None):
+        # this is handy when dealing with environments with different number of excavation areas
+        # rescaling the rewards we can get approximately the same end reward.
+        if rewards:
+            # rewards
+            self.collision_reward = rewards["collision_reward"]
+            self.longitudinal_step_reward = rewards["longitudinal_step_reward"]
+            self.base_turn_reward = rewards["base_turn_reward"]
+            self.dig_reward = rewards["dig_reward"]
+            self.move_dirt_reward = rewards["move_dirt_reward"]
+            self.existence_reward = rewards["existence_reward"]
+            self.cabin_turn_reward = rewards["cabin_turn_reward"]
+            self.terminal_reward = rewards["terminal_reward"]
+            self.dig_wrong_reward = rewards["dig_wrong_reward"]
+
         # reset current height
         self.grid_height = self.heigthgrid_0
         self.agent_pos = agent_pose[:2]
         self.base_dir = agent_pose[2]
         self.cabin_dir = agent_pose[3]
+
+        if target_map is not None:
+            self.grid_target = target_map
 
         if self.render_env:
             self.place_obj_at_pos(AgentObj(), agent_pose[:2])
