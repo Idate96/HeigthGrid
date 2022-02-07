@@ -6,15 +6,15 @@ from heightgrid.create_maps import create_rectangle
 class ProceduralTrenchEnv(GridWorld):
     def __init__(self, **kwargs):
         self.global_rewards = {"collision_reward": -0.01,  # against wall 0, ok
-                   "longitudinal_step_reward": -0.01,
-                   "base_turn_reward": -0.04,  # ok
-                   "dig_reward": 1,  # ok
+                   "longitudinal_step_reward": -0.001,
+                   "base_turn_reward": -0.004,  # ok
+                   "dig_reward": 0.1,  # ok
                    "dig_wrong_reward": -2,  # ok
-                   "move_dirt_reward": 1,
-                   "existence_reward": -0.005,  # ok
-                   "cabin_turn_reward": -0.01,  # ok
+                   "move_dirt_reward": 0.1,
+                   "existence_reward": -0.0005,  # ok
+                   "cabin_turn_reward": -0.001,  # ok
                    "reward_scaling": 1, # ok
-                   "terminal_reward": 10}
+                   "terminal_reward": 1}
 
         self.name = "ProceduralTrench"
         self.map_size = 7
@@ -105,6 +105,6 @@ class ProceduralTrenchEnv(GridWorld):
 
 
 register(
-    id="HeightGrid-ProceduralTrench-v0",
+    id="HeightGrid-ProceduralTrench-v01",
     entry_point='heightgrid.envs_v2:ProceduralTrenchEnv'
 )
