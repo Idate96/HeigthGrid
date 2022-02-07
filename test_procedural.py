@@ -133,7 +133,7 @@ rewards = {"collision_reward": -1, # against wall 0, ok
            "cabin_turn_reward": -0.05, # ok
            "terminal_reward": 10}
 
-env = ProceduralBasementEnv()
+env = ProceduralTrenchEnv()
 print(env)
 env.seed(24)
 env.level_up()
