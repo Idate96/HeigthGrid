@@ -16,7 +16,7 @@ class ProceduralBasement11Env(GridWorld):
                    "reward_scaling": 1, # ok
                    "terminal_reward": 1}
 
-        self.name = "ProceduralBasement"
+        self.name = "ProceduralBasement11"
         self.map_size = 11
         grid_height = np.zeros((self.map_size, self.map_size))
         self.trench_lenght = 2
@@ -452,6 +452,10 @@ register(
     entry_point='heightgrid.envs_v2:ProceduralConstrainedBasementEnv'
 )
 
+register(
+    id="HeightGrid-ProceduralBasement-v0",
+    entry_point='heightgrid.envs_v2:ProceduralBasement11Env'
+)
 
 register(
     id="HeightGrid-ProceduralBasement-v0",
