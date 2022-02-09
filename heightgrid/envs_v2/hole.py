@@ -453,7 +453,7 @@ register(
 )
 
 register(
-    id="HeightGrid-ProceduralBasement-v0",
+    id="HeightGrid-ProceduralBasement11-v0",
     entry_point='heightgrid.envs_v2:ProceduralBasement11Env'
 )
 
