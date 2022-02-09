@@ -283,7 +283,7 @@ class GridWorld(gym.Env):
         self.existence_reward = rewards["existence_reward"]
         self.cabin_turn_reward = rewards["cabin_turn_reward"]
         self.terminal_reward = rewards["terminal_reward"]
-        self.dig_wrong_reward = rewards["dig_wrong_reward"]
+        # self.dig_wrong_reward = rewards["dig_wrong_reward"]
 
         # rendering flat
         self.render_env = render
@@ -483,6 +483,18 @@ class GridWorld(gym.Env):
             if not self.can_dig(self.agent_pos + DIR_TO_VEC_CABIN[self.cabin_dir]):
                 action_mask[self.actions.do] = 0
 
+            # prevents from blocking itself! (this is with bucket empty)
+            action_mask[self.actions.do] = 0
+            num_excavated_adj_areas = 0
+            adj_cell_height = self.adjacent_cells_height(self.agent_pos)
+            # if it contains two -1 block the action
+            for (i, h) in enumerate(adj_cell_height):
+                if h == -1:
+                    num_excavated_adj_areas += 1
+                if num_excavated_adj_areas > 1:
+                    action_mask[self.actions.do] = 0
+                    break
+
             # mask digging if cabin direction is aligned with the base direction
             if np.equal(np.abs(DIR_TO_VEC_CABIN[self.cabin_dir]), np.abs(DIR_TO_VEC_BASE[self.base_dir])).all():
                 # check if blocks have been dug in the base direction
@@ -499,6 +511,12 @@ class GridWorld(gym.Env):
                 action_mask[self.actions.do] = 0
 
         return action_mask
+
+    def adjancent_cells(self, pos):
+        return [pos + DIR_TO_VEC_BASE[i] for i in range(4)]
+
+    def adjacent_cells_height(self, pos):
+        return np.array([self.get_height(pos + DIR_TO_VEC_BASE[i]) for i in range(4)])
 
     def is_dug(self, pos):
         if not self.in_bounds(pos):
@@ -554,7 +572,7 @@ class GridWorld(gym.Env):
             self.existence_reward = rewards["existence_reward"]
             self.cabin_turn_reward = rewards["cabin_turn_reward"]
             self.terminal_reward = rewards["terminal_reward"]
-            self.dig_wrong_reward = rewards["dig_wrong_reward"]
+            # self.dig_wrong_reward = rewards["dig_wrong_reward"]
 
         # reset current height
         self.grid_height = self.heigthgrid_0
@@ -696,7 +714,10 @@ class GridWorld(gym.Env):
         return x_bounded and y_bounded
 
     def get_height(self, pos):
-        return self.image_obs[pos[0], pos[1], 0]
+        if self.in_bounds(pos):
+            return self.image_obs[pos[0], pos[1], 0]
+        else:
+            return -1
 
     def move_agent_pos(self, fwd_pos):
         self.move_obj_pos(self.agent_pos, fwd_pos, self.get(*self.agent_pos))
@@ -741,10 +762,23 @@ class GridWorld(gym.Env):
                         # if it was in a +1 target location penalize else the agent will get stuck in a loop
                         if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
                             reward -= self.move_dirt_reward
+                        # check if you blocked the access to a cell
+
                     else:
                         if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == -1:
                             self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = -1
                             reward += self.dig_reward
+
+
+                        # check if any cells got blocked by digging a cell
+                        for adj_cell in self.adjancent_cells(self.cabin_front_pos):
+                            if self.get_height(adj_cell) != -1:
+                                adj_cell_height = self.adjacent_cells_height(adj_cell)
+                                if np.sum(adj_cell_height) == -4:
+                                    reward -= self.terminal_reward
+                                    done = True
+
+
                         #     done = True
                         # # else:
                         # delta_h_t = self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] - self.image_obs[
