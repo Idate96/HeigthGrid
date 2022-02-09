@@ -16,14 +16,13 @@ import networkx as nx
 
 class Actions(IntEnum):
     # Turn left, turn right, move forward
-    noop = 0
-    rotate_cabin_counter = 1
-    rotate_cabin_clock = 2
-    forward = 3
-    backward = 4
-    rotate_base_counter = 5
-    rotate_base_clock = 6
-    do = 7
+    rotate_cabin_counter = 0
+    rotate_cabin_clock = 1
+    forward = 2
+    backward = 3
+    rotate_base_counter = 4
+    rotate_base_clock = 5
+    do = 6
 
 
 eps = 10 ** -7
@@ -288,6 +287,10 @@ class GridWorld(gym.Env):
 
         # rendering flat
         self.render_env = render
+        self.action_mask = np.ones(self.num_actions)
+
+        self.excavation_mask = self.image_obs[:, :, 1] == -1
+        self.neutral_area = self.image_obs[:, :, 1] == 0
 
     @property
     def agent_pos(self):
@@ -428,6 +431,80 @@ class GridWorld(gym.Env):
     #
     #     return available_actions
 
+    def fwd_direction_allowed(self, fwd_pos):
+        return self.in_bounds(fwd_pos) and self.is_traversable(self.agent_pos, fwd_pos)
+
+    def action_masks(self):
+        action_mask = np.ones((self.num_actions,), dtype=np.uint8)
+
+        if not self.bucket_full:
+            # mask forward action?
+            fwd_pos = self.agent_pos + DIR_TO_VEC_BASE[self.base_dir]
+            if not self.fwd_direction_allowed(fwd_pos):
+                action_mask[self.actions.forward] = 0
+
+            # mask backward action?
+            fwd_pos = self.agent_pos + DIR_TO_VEC_BASE[(self.base_dir + 2) % 4]
+            if not self.fwd_direction_allowed(fwd_pos):
+                action_mask[self.actions.backward] = 0
+
+            # mask rotating the base action?
+            # if after rotating the machine cannot move forward or backward mask the action
+            # counter clockwise
+            base_dir_counter = (self.base_dir + 1) % 4
+            # check if at least one of the two directions is traversable
+            fwd_dir_counter = self.agent_pos + DIR_TO_VEC_BASE[base_dir_counter]
+            fwd_allowed_counter = self.fwd_direction_allowed(fwd_dir_counter)
+            back_dir_counter = self.agent_pos + DIR_TO_VEC_BASE[(base_dir_counter + 2) % 4]
+            back_allowed_counter = self.fwd_direction_allowed(back_dir_counter)
+
+            if not fwd_allowed_counter and not back_allowed_counter:
+                action_mask[self.actions.rotate_base_clock] = 0
+                action_mask[self.actions.rotate_base_counter] = 0
+
+            # mask cabin rotation if there is nothing to dig around the excavator
+            action_mask[self.actions.rotate_cabin_counter] = 0
+            action_mask[self.actions.rotate_cabin_clock] = 0
+            num_dig_spots = 0
+
+            for i in range(8):
+                dir = DIR_TO_VEC_CABIN[i]
+                pos = self.agent_pos + dir
+                # if can't dig in any spot mask the action
+                if self.can_dig(pos):
+                    num_dig_spots += 1
+
+            # dumping spots are diggable so we need at least two diggable spots
+            if num_dig_spots > 0:
+                action_mask[self.actions.rotate_cabin_clock] = 1
+                action_mask[self.actions.rotate_cabin_counter] = 1
+
+            # mask do digging if nothing is diggable in the cabin direction
+            if not self.can_dig(self.agent_pos + DIR_TO_VEC_CABIN[self.cabin_dir]):
+                action_mask[self.actions.do] = 0
+
+            # mask digging if cabin direction is aligned with the base direction
+            if np.equal(np.abs(DIR_TO_VEC_CABIN[self.cabin_dir]), np.abs(DIR_TO_VEC_BASE[self.base_dir])).all():
+                # check if blocks have been dug in the base direction
+                # if one block has already been dug block the digging action
+                pos_fwd = self.agent_pos + DIR_TO_VEC_BASE[self.base_dir]
+                pos_back = self.agent_pos - DIR_TO_VEC_BASE[(self.base_dir + 2) % 4]
+                # if any of the two is not has been dug block the action
+                if self.is_dug(pos_fwd) or self.is_dug(pos_back):
+                    action_mask[self.actions.do] = 0
+
+        if self.bucket_full:
+            # if cabin points to dug area mask the action
+            if not self.can_drop(self.agent_pos + DIR_TO_VEC_CABIN[self.cabin_dir]):
+                action_mask[self.actions.do] = 0
+
+        return action_mask
+
+    def is_dug(self, pos):
+        if not self.in_bounds(pos):
+            return False
+        return self.image_obs[pos[0], pos[1], 0] < -0.5
+
     def __str__(self):
         repre = "Height " + 10 * "-" + "\n"
         repre += np.array2string(self.image_obs[:, :, 0])
@@ -499,6 +576,9 @@ class GridWorld(gym.Env):
         # add agent to the obj list for heightgrid.rendering
         # self.grid_object = self.x_dim * self.y_dim * [None]
         # self.place_obj_at_pos(AgentObj(), self.agent_pos)
+
+        self.excavation_mask = self.image_obs[:, :, 1] == -1
+        self.neutral_area = self.image_obs[:, :, 1] == 0
 
         self.step_count = 0
         self.number_dig_sites = np.sum(np.abs(self.grid_target))
@@ -604,6 +684,10 @@ class GridWorld(gym.Env):
             return False
         if target_pos[1] < 0 or target_pos[1] >= self.y_dim:
             return False
+        # if the target is already dug is not allowed
+        if self.image_obs[target_pos[0], target_pos[1], 0] == -1:
+            return False
+
         return True
 
     def in_bounds(self, pos):
@@ -629,21 +713,13 @@ class GridWorld(gym.Env):
             # move
             if action == self.actions.forward:
                 fwd_pos = self.agent_pos + DIR_TO_VEC_BASE[self.base_dir]
-                if self.in_bounds(fwd_pos):
-                    if self.is_traversable(self.agent_pos, fwd_pos):
-                        self.agent_pos = fwd_pos
-                        reward += self.longitudinal_step_reward
-                    else:
-                        reward += self.collision_reward
+                self.agent_pos = fwd_pos
+                reward += self.longitudinal_step_reward
 
             elif action == self.actions.backward:
                 fwd_pos = self.agent_pos + DIR_TO_VEC_BASE[(self.base_dir + 2) % 4]
-                if self.in_bounds(fwd_pos):
-                    if self.is_traversable(self.agent_pos, fwd_pos):
-                        self.agent_pos = fwd_pos
-                        reward += self.longitudinal_step_reward
-                    else:
-                        reward += self.collision_reward
+                self.agent_pos = fwd_pos
+                reward += self.longitudinal_step_reward
 
             elif action == self.actions.rotate_base_clock:
                 self.base_dir = (self.base_dir + 1) % 4
@@ -656,7 +732,6 @@ class GridWorld(gym.Env):
                 reward += self.base_turn_reward
 
             elif action == self.actions.do:
-                if self.can_dig(self.cabin_front_pos):
                     # check if there is dirt first
                     if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] == 1:
                         # # remove elevation
@@ -667,32 +742,33 @@ class GridWorld(gym.Env):
                         if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
                             reward -= self.move_dirt_reward
                     else:
-                        # if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] != -1:
-                        #     reward += self.dig_wrong_reward
+                        if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == -1:
+                            self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = -1
+                            reward += self.dig_reward
                         #     done = True
+                        # # else:
+                        # delta_h_t = self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] - self.image_obs[
+                        #     self.cabin_front_pos[0], self.cabin_front_pos[1], 0]
+                        # self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = -1
+                        # delta_h_tp1 = self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] - self.image_obs[
+                        #     self.cabin_front_pos[0], self.cabin_front_pos[1], 0]
+                        # reward_sign = - (np.abs(delta_h_tp1) - np.abs(delta_h_t))
+                        # # penalize for digging in the wrong location
+                        # reward_value = reward_sign * self.dig_reward
+                        # if reward_value < 0:
+                        #     # to discourage of pick and drop of the dirt
+                        #     reward += reward_value * 1.1
                         # else:
-                        delta_h_t = self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] - self.image_obs[
-                            self.cabin_front_pos[0], self.cabin_front_pos[1], 0]
-                        self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = -1
-                        delta_h_tp1 = self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] - self.image_obs[
-                            self.cabin_front_pos[0], self.cabin_front_pos[1], 0]
-                        reward_sign = - (np.abs(delta_h_tp1) - np.abs(delta_h_t))
-                        # penalize for digging in the wrong location
-                        reward += reward_sign * self.dig_reward
+                        #     reward += reward_value
                     self.bucket_full = 1
         else:
             if action == self.actions.do:
-                if self.can_drop(self.cabin_front_pos):
-                    # if it drops it on previusly excavated area
-                    if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] == -1:
-                        reward -= 0.1 * self.dig_reward
-                    else:
-                        # if drops dirt on target elevation +1 (no problem with dirt)
-                        if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
-                            reward += self.move_dirt_reward
+                # if drops dirt on target elevation +1 (no problem with dirt)
+                if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
+                    reward += self.move_dirt_reward
 
-                        self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = 1
-                        self.bucket_full = 0
+                self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = 1
+                self.bucket_full = 0
 
         # rotate
         if action == self.actions.rotate_cabin_clock:
@@ -702,17 +778,21 @@ class GridWorld(gym.Env):
             self.cabin_dir = (self.cabin_dir - 1) % 8
             reward += self.cabin_turn_reward
 
-        excavation_mask = self.image_obs[:, :, 1] == -1
+
+
         height = self.image_obs[:, :, 0]
         target_height = self.image_obs[:, :, 1]
 
-        if np.sum(target_height[excavation_mask] - height[excavation_mask]) == 0 and not self.bucket_full:
-            reward += self.terminal_reward
-            done = True
+        if np.sum(target_height[self.excavation_mask] - height[self.excavation_mask]) == 0 and not self.bucket_full:
+            if np.sum(height[self.neutral_area]) == 0:
+                reward += self.terminal_reward
+                done = True
 
         if self.step_count >= self.max_steps:
             done = True
 
+        # print action masks
+        action_masks = self.action_masks()
         return self._observation, reward, done, {}
 
     @classmethod
