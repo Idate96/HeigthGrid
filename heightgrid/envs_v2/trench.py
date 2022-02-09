@@ -235,7 +235,7 @@ class ConnectedTrenchEnv(GridWorld):
         return obs
 
 
-class ConnectedTrenchEnv11(GridWorld):
+class ConnectedTrench11Env(GridWorld):
     def __init__(self, **kwargs):
         self.global_rewards = {"collision_reward": -0.001,  # against wall 0, ok
                    "longitudinal_step_reward": -0.001,
@@ -261,7 +261,7 @@ class ConnectedTrenchEnv11(GridWorld):
         self.min_trench_length = 2
         self.max_trench_width = 1
         self.min_trench_width = 1
-        self.max_num_trenches = 4
+        self.max_num_trenches = 5
         self.min_num_trenches = 1
         self.level = 0
         self.max_level = (self.max_num_trenches - self.min_num_trenches + 1) * (self.max_trench_width - self.min_trench_width + 1) * (self.max_trench_length - self.min_trench_length + 1)
@@ -459,8 +459,8 @@ class TrenchEnv5x5_1x1(GridWorld):
         # self.place_obj_at_pos(Goal(), np.array([4, 4]))
 
 register(
-    id="HeightGrid-ProceduralConnectedTrench-11",
-    entry_point='heightgrid.envs_v2:ConnectedTrenchEnv11'
+    id="HeightGrid-ProceduralConnectedTrench11-v0",
+    entry_point='heightgrid.envs_v2:ConnectedTrench11Env'
 )
 
 register(

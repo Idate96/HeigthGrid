@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from heightgrid.envs_v2.hole import HoleEnv5x5_1x1, HoleEnv5x5_3x3, HoleEnv7x7_3x3, ProceduralBasementEnv, ProceduralConstrainedBasementEnv
-from heightgrid.envs_v2.trench import TrenchEnv7x7_3x1, TrenchEnv5x5_1x1, TrenchEnv5x5_3x1, ProceduralTrenchEnv, ConnectedTrenchEnv
+from heightgrid.envs_v2.trench import TrenchEnv7x7_3x1, TrenchEnv5x5_1x1, TrenchEnv5x5_3x1, ProceduralTrenchEnv, ConnectedTrenchEnv, ConnectedTrench11Env
 import argparse
 
 
@@ -133,7 +133,7 @@ rewards = {"collision_reward": -1, # against wall 0, ok
            "cabin_turn_reward": -0.05, # ok
            "terminal_reward": 10}
 
-env = ConnectedTrenchEnv()
+env = ConnectedTrench11Env()
 print(env)
 env.seed(24)
 env.level_up()
