@@ -1,19 +1,20 @@
+from heightgrid.create_maps import create_rectangle
 from heightgrid.heightgrid_v2 import *
 from heightgrid.register import register
-from heightgrid.create_maps import create_rectangle
+
 
 class ProceduralTrenchEnv(GridWorld):
     def __init__(self, **kwargs):
         self.global_rewards = {"collision_reward": -0.001,  # against wall 0, ok
-                   "longitudinal_step_reward": -0.0005,
-                   "base_turn_reward": -0.002,  # ok
-                   "dig_reward": .1,  # ok
-                   "dig_wrong_reward": -2,  # ok
-                   "move_dirt_reward": .1,
-                   "existence_reward": -0.0005,  # ok
-                   "cabin_turn_reward": -0.0005,  # ok
-                   "reward_scaling": 1, # ok
-                   "terminal_reward": 1}
+                               "longitudinal_step_reward": -0.0005,
+                               "base_turn_reward": -0.002,  # ok
+                               "dig_reward": .1,  # ok
+                               "dig_wrong_reward": -2,  # ok
+                               "move_dirt_reward": .1,
+                               "existence_reward": -0.0005,  # ok
+                               "cabin_turn_reward": -0.0005,  # ok
+                               "reward_scaling": 1,  # ok
+                               "terminal_reward": 1}
 
         self.name = "ProceduralTrench"
         self.map_size = 7
@@ -30,7 +31,9 @@ class ProceduralTrenchEnv(GridWorld):
         self.max_num_trenches = 2
         self.min_num_trenches = 1
         self.level = 0
-        self.max_level = (self.max_num_trenches - self.min_num_trenches + 1) * (self.max_trench_width - self.min_trench_width + 1) * (self.max_trench_length - self.min_trench_length + 1)
+        self.max_level = (self.max_num_trenches - self.min_num_trenches + 1) * (
+                    self.max_trench_width - self.min_trench_width + 1) * (
+                                     self.max_trench_length - self.min_trench_length + 1)
         print("Num Levels: ", self.max_level)
         self.reward_scaling = self.global_rewards["reward_scaling"]
         self.terminal_reward_0 = self.global_rewards["terminal_reward"]
@@ -50,9 +53,13 @@ class ProceduralTrenchEnv(GridWorld):
         # print("Generating level: {}".format(self.level))
         # progressively increase in this order the number of trenches, the trench length and the trench width
         self.trench_lenght = self.min_trench_length + self.level % (self.max_trench_length - self.min_trench_length + 1)
-        self.trench_width = self.min_trench_width + int(self.level / (self.max_trench_length - self.min_trench_length + 1)) % (self.max_trench_width - self.min_trench_width + 1)
-        self.num_trenches = self.min_num_trenches + int(self.level / ((self.max_trench_width - self.min_trench_width + 1) *
-                                                        (self.max_trench_length - self.min_trench_length + 1))) % (self.max_num_trenches - self.min_num_trenches + 1)
+        self.trench_width = self.min_trench_width + int(
+            self.level / (self.max_trench_length - self.min_trench_length + 1)) % (
+                                        self.max_trench_width - self.min_trench_width + 1)
+        self.num_trenches = self.min_num_trenches + int(
+            self.level / ((self.max_trench_width - self.min_trench_width + 1) *
+                          (self.max_trench_length - self.min_trench_length + 1))) % (
+                                        self.max_num_trenches - self.min_num_trenches + 1)
         # print("trench_lenght: {}, trench_width: {}, num_trenches: {}".format(self.trench_lenght, self.trench_width, self.num_trenches))
 
         occupied_space = 1
@@ -115,15 +122,15 @@ class ProceduralTrenchEnv(GridWorld):
 class ConnectedTrenchEnv(GridWorld):
     def __init__(self, **kwargs):
         self.global_rewards = {"collision_reward": -0.001,  # against wall 0, ok
-                   "longitudinal_step_reward": -0.0005,
-                   "base_turn_reward": -0.002,  # ok
-                   "dig_reward": .1,  # ok
-                   "dig_wrong_reward": -2,  # ok
-                   "move_dirt_reward": .1,
-                   "existence_reward": -0.0005,  # ok
-                   "cabin_turn_reward": -0.0005,  # ok
-                   "reward_scaling": 1, # ok
-                   "terminal_reward": 1}
+                               "longitudinal_step_reward": -0.0005,
+                               "base_turn_reward": -0.002,  # ok
+                               "dig_reward": .1,  # ok
+                               "dig_wrong_reward": -2,  # ok
+                               "move_dirt_reward": .1,
+                               "existence_reward": -0.0005,  # ok
+                               "cabin_turn_reward": -0.0005,  # ok
+                               "reward_scaling": 1,  # ok
+                               "terminal_reward": 1}
 
         self.name = "ConnectedTrenchEnv"
         print("Initializing {}".format(self.name))
@@ -141,7 +148,9 @@ class ConnectedTrenchEnv(GridWorld):
         self.max_num_trenches = 3
         self.min_num_trenches = 1
         self.level = 0
-        self.max_level = (self.max_num_trenches - self.min_num_trenches + 1) * (self.max_trench_width - self.min_trench_width + 1) * (self.max_trench_length - self.min_trench_length + 1)
+        self.max_level = (self.max_num_trenches - self.min_num_trenches + 1) * (
+                    self.max_trench_width - self.min_trench_width + 1) * (
+                                     self.max_trench_length - self.min_trench_length + 1)
         print("Num Levels: ", self.max_level)
         self.reward_scaling = self.global_rewards["reward_scaling"]
         self.terminal_reward_0 = self.global_rewards["terminal_reward"]
@@ -160,9 +169,13 @@ class ConnectedTrenchEnv(GridWorld):
     def generate_level(self):
         # progressively increase in this order the number of trenches, the trench length and the trench width
         self.trench_lenght = self.min_trench_length + self.level % (self.max_trench_length - self.min_trench_length + 1)
-        self.trench_width = self.min_trench_width + int(self.level / (self.max_trench_length - self.min_trench_length + 1)) % (self.max_trench_width - self.min_trench_width + 1)
-        self.num_trenches = self.min_num_trenches + int(self.level / ((self.max_trench_width - self.min_trench_width + 1) *
-                                                        (self.max_trench_length - self.min_trench_length + 1))) % (self.max_num_trenches - self.min_num_trenches + 1)
+        self.trench_width = self.min_trench_width + int(
+            self.level / (self.max_trench_length - self.min_trench_length + 1)) % (
+                                        self.max_trench_width - self.min_trench_width + 1)
+        self.num_trenches = self.min_num_trenches + int(
+            self.level / ((self.max_trench_width - self.min_trench_width + 1) *
+                          (self.max_trench_length - self.min_trench_length + 1))) % (
+                                        self.max_num_trenches - self.min_num_trenches + 1)
 
         occupied_space = 1
         num_blocks = 2
@@ -193,7 +206,8 @@ class ConnectedTrenchEnv(GridWorld):
         # trenches have value -1 in the map
         # place another trench in the map making sure it overlaps with the previous one
         while True:
-            trench_length = self.min_trench_length + np.random.randint(0, self.trench_lenght - self.min_trench_length + 1)
+            trench_length = self.min_trench_length + np.random.randint(0,
+                                                                       self.trench_lenght - self.min_trench_length + 1)
 
             # pick random trench width between the min and self.trench_width
             trench_width = self.min_trench_width + np.random.randint(0, self.trench_width - self.min_trench_width + 1)
@@ -255,7 +269,7 @@ class TrenchEnv7x7_3x1(GridWorld):
         super().__init__(heightgrid=heightgrid,
                          target_grid_height=target_map,
                          rewards=rewards,
-                        **kwargs)
+                         **kwargs)
 
     def reset(self):
         # pick a random position inside the grid
@@ -269,7 +283,6 @@ class TrenchEnv7x7_3x1(GridWorld):
 
 class TrenchEnv5x5_3x1(GridWorld):
     def __init__(self, **kwargs):
-
         rewards = {"collision_reward": -0.01,  # against wall 0, ok
                    "longitudinal_step_reward": -0.01,
                    "base_turn_reward": -0.02,  # ok
@@ -289,7 +302,7 @@ class TrenchEnv5x5_3x1(GridWorld):
         super().__init__(heightgrid=heightgrid,
                          target_grid_height=target_map,
                          rewards=rewards,
-                        **kwargs)
+                         **kwargs)
 
     def reset(self):
         # pick a random position inside the grid
@@ -304,7 +317,6 @@ class TrenchEnv5x5_3x1(GridWorld):
 
 class TrenchEnv5x5_1x1(GridWorld):
     def __init__(self, **kwargs):
-
         rewards = {"collision_reward": -0.01,  # against wall 0, ok
                    "longitudinal_step_reward": -0.01,
                    "base_turn_reward": -0.02,  # ok
@@ -325,7 +337,7 @@ class TrenchEnv5x5_1x1(GridWorld):
         super().__init__(heightgrid=heightgrid,
                          target_grid_height=target_map,
                          rewards=rewards,
-                        **kwargs)
+                         **kwargs)
 
     def reset(self):
         agent_pose = (0, 0, 0, 0)
@@ -338,7 +350,6 @@ register(
     id="HeightGrid-ProceduralConnectedTrench-v0",
     entry_point='heightgrid.envs_v2:ConnectedTrenchEnv'
 )
-
 
 register(
     id="HeightGrid-ProceduralTrench-v0",
@@ -359,4 +370,3 @@ register(
     id='HeightGrid-Trench-5-1-v1',
     entry_point='heightgrid.envs_v2:TrenchEnv5x5_1x1'
 )
-

@@ -1,17 +1,16 @@
+import gym
+import networkx as nx
+import numpy as np
+import warnings
+from abc import abstractmethod, ABCMeta
+from enum import IntEnum
+from gym import spaces
+from matplotlib.pyplot import grid
+from numpy.core.numeric import False_
 from typing import Tuple, Dict
 
-from matplotlib.pyplot import grid
-import numpy as np
-import gym
-from gym import spaces
-from abc import abstractmethod, ABCMeta
-
-from numpy.core.numeric import False_
 import heightgrid.rendering
-from enum import IntEnum
-import warnings
 import heightgrid.window
-import networkx as nx
 
 
 class Actions(IntEnum):
@@ -67,7 +66,6 @@ DIR_TO_VEC_BASE = [
     np.array((0, -1)),
     # right up
 ]
-
 
 DIR_TO_VEC_CABIN = [
     # Pointing right (positive X)
@@ -670,7 +668,8 @@ class GridWorld(gym.Env):
         if self.image_obs[target_pos[0], target_pos[1], 0] == 1:
             return True
 
-        if self.image_obs[target_pos[0], target_pos[1], 0] == -1. or self.image_obs[target_pos[0], target_pos[1], 1] != -1.:
+        if self.image_obs[target_pos[0], target_pos[1], 0] == -1. or self.image_obs[
+            target_pos[0], target_pos[1], 1] != -1.:
             return False
 
         return True
@@ -732,35 +731,35 @@ class GridWorld(gym.Env):
                 reward += self.base_turn_reward
 
             elif action == self.actions.do:
-                    # check if there is dirt first
-                    if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] == 1:
-                        # # remove elevation
-                        # self.image_obs[self.front_pos[0], self.front_pos[1], 0] = 0
-                        # remove from dirt map
-                        self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = 0
-                        # if it was in a +1 target location penalize else the agent will get stuck in a loop
-                        if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
-                            reward -= self.move_dirt_reward
-                    else:
-                        if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == -1:
-                            self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = -1
-                            reward += self.dig_reward
-                        #     done = True
-                        # # else:
-                        # delta_h_t = self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] - self.image_obs[
-                        #     self.cabin_front_pos[0], self.cabin_front_pos[1], 0]
-                        # self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = -1
-                        # delta_h_tp1 = self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] - self.image_obs[
-                        #     self.cabin_front_pos[0], self.cabin_front_pos[1], 0]
-                        # reward_sign = - (np.abs(delta_h_tp1) - np.abs(delta_h_t))
-                        # # penalize for digging in the wrong location
-                        # reward_value = reward_sign * self.dig_reward
-                        # if reward_value < 0:
-                        #     # to discourage of pick and drop of the dirt
-                        #     reward += reward_value * 1.1
-                        # else:
-                        #     reward += reward_value
-                    self.bucket_full = 1
+                # check if there is dirt first
+                if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] == 1:
+                    # # remove elevation
+                    # self.image_obs[self.front_pos[0], self.front_pos[1], 0] = 0
+                    # remove from dirt map
+                    self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = 0
+                    # if it was in a +1 target location penalize else the agent will get stuck in a loop
+                    if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == 1:
+                        reward -= self.move_dirt_reward
+                else:
+                    if self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] == -1:
+                        self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = -1
+                        reward += self.dig_reward
+                    #     done = True
+                    # # else:
+                    # delta_h_t = self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] - self.image_obs[
+                    #     self.cabin_front_pos[0], self.cabin_front_pos[1], 0]
+                    # self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 0] = -1
+                    # delta_h_tp1 = self.image_obs[self.cabin_front_pos[0], self.cabin_front_pos[1], 1] - self.image_obs[
+                    #     self.cabin_front_pos[0], self.cabin_front_pos[1], 0]
+                    # reward_sign = - (np.abs(delta_h_tp1) - np.abs(delta_h_t))
+                    # # penalize for digging in the wrong location
+                    # reward_value = reward_sign * self.dig_reward
+                    # if reward_value < 0:
+                    #     # to discourage of pick and drop of the dirt
+                    #     reward += reward_value * 1.1
+                    # else:
+                    #     reward += reward_value
+                self.bucket_full = 1
         else:
             if action == self.actions.do:
                 # if drops dirt on target elevation +1 (no problem with dirt)
@@ -777,8 +776,6 @@ class GridWorld(gym.Env):
         elif action == self.actions.rotate_cabin_counter:
             self.cabin_dir = (self.cabin_dir - 1) % 8
             reward += self.cabin_turn_reward
-
-
 
         height = self.image_obs[:, :, 0]
         target_height = self.image_obs[:, :, 1]
@@ -842,7 +839,7 @@ class GridWorld(gym.Env):
             )
 
             back_base_fn = heightgrid.rendering.rotate_fn(
-                back_base_fn, cx=0.5, cy=0.5, theta=-np.pi/2 + np.pi / 2 * base_dir
+                back_base_fn, cx=0.5, cy=0.5, theta=-np.pi / 2 + np.pi / 2 * base_dir
             )
             # render in black
             heightgrid.rendering.fill_coords(
@@ -853,7 +850,7 @@ class GridWorld(gym.Env):
             )
 
             base_fn = heightgrid.rendering.rotate_fn(
-                base_fn, cx=0.5, cy=0.5, theta=-np.pi/2 + np.pi / 2 * base_dir
+                base_fn, cx=0.5, cy=0.5, theta=-np.pi / 2 + np.pi / 2 * base_dir
             )
 
             heightgrid.rendering.fill_coords(img, base_fn, (255, 255, 0))
@@ -866,7 +863,7 @@ class GridWorld(gym.Env):
 
             # Rotate the agent based on its direction
             tri_fn = heightgrid.rendering.rotate_fn(
-                tri_fn, cx=0.5, cy=0.5, theta= np.pi / 4 * cabin_dir
+                tri_fn, cx=0.5, cy=0.5, theta=np.pi / 4 * cabin_dir
             )
             heightgrid.rendering.fill_coords(img, tri_fn, (255, 0, 0))
 

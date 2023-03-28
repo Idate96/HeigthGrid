@@ -123,26 +123,17 @@ args = parser.parse_args()
 # grid_height[1, 3] = 1
 # env = gym.make(args.env)
 # env = EmptyEnv5x5()
-rewards = {"collision_reward": -1, # against wall 0, ok
-           "longitudinal_step_reward": -0.1,
-           "base_turn_reward": -0.2, # ok
-           "dig_reward": 1, # ok
-           "dig_wrong_reward": -2, # ok
-           "move_dirt_reward": 1,
-           "existence_reward": -0.05, # ok
-           "cabin_turn_reward": -0.05, # ok
-           "terminal_reward": 10}
 
 env = ConnectedTrenchEnv()
 print(env)
-env.seed(24)
+env.seed = 24
 env.level_up()
 # if args.agent_view:
 #     env = FullyObsWrapper(env)
 # env = ImgObsWrapper(env)
 
 # window = Window('heightgrid - ' + args.env)
-env.render(block=True, key_handler=key_handler)
+# env.render(block=True, key_handler=key_handler)
 # env.window.reg_key_handler(key_handler)
 # env.window_target.reg_key_handler(key_handler)
 

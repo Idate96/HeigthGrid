@@ -1,8 +1,6 @@
-from heightgrid.heightgrid import *
-from heightgrid.register import register
-
 from numpy import random
-from heightgrid.heightgrid import *
+
+from heightgrid.heightgrid_v2 import *
 from heightgrid.register import register
 
 
@@ -29,23 +27,32 @@ class FlatEnv(GridWorld):
     """
 
     def __init__(
-        self,
-        grid_height,
-        target_grid_height,
-        agent_start_pos=(1, 1),
-        agent_start_dir=0,
-        step_cost: float = -0.05,
-        max_steps: int = 256,
-        **kwargs
+            self,
+            grid_height,
+            target_grid_height,
+            agent_start_pos=(1, 1),
+            agent_start_dir=0,
+            step_cost: float = -0.05,
+            max_steps: int = 256,
+            **kwargs
     ):
+        self.global_rewards = {"collision_reward": -0.001,  # against wall 0, ok
+                               "longitudinal_step_reward": -0.0005,
+                               "base_turn_reward": -0.002,  # ok
+                               "dig_reward": .1,  # ok
+                               "dig_wrong_reward": -2,  # ok
+                               "move_dirt_reward": .1,
+                               "existence_reward": -0.0005,  # ok
+                               "cabin_turn_reward": -0.0005,  # ok
+                               "reward_scaling": 1,  # ok
+                               "terminal_reward": 1}
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
 
         super().__init__(
             target_grid_height=target_grid_height,
-            grid_height=grid_height,
-            max_steps=max_steps,
-            step_cost=step_cost,
+            heightgrid=grid_height,
+            rewards=self.global_rewards,
             **kwargs
         )
 
@@ -223,7 +230,7 @@ class EmptyRandomEnv14x14(FlatEnv):
         k = np.random.randint(0, 4)
         restart = super().reset(agent_pose=(i, j, k))
         goal_pos = self.goal_pos([i, j])
-        
+
         self.place_obj_at_pos(Goal(), goal_pos)
         return restart
 
@@ -316,30 +323,27 @@ class EmptyRandomEnv32x32(FlatEnv):
         return restart
 
 
-register(id="HeightGrid-Empty-5x5-v0", entry_point="heightgrid.envs:EmptyEnv5x5")
+register(id="HeightGrid-Empty-5x5-v0", entry_point="heightgrid.envs_v2:EmptyEnv5x5")
 
 register(
-    id="HeightGrid-Empty-Random-5x5-v0", entry_point="heightgrid.envs:EmptyRandomEnv5x5"
+    id="HeightGrid-Empty-Random-5x5-v0", entry_point="heightgrid.envs_v2:EmptyRandomEnv5x5"
 )
 
-
-register(id="HeightGrid-Empty-8x8-v0", entry_point="heightgrid.envs:EmptyEnv8x8")
+register(id="HeightGrid-Empty-8x8-v0", entry_point="heightgrid.envs_v2:EmptyEnv8x8")
 
 register(
-    id="HeightGrid-Empty-Random-8x8-v0", entry_point="heightgrid.envs:EmptyRandomEnv8x8"
+    id="HeightGrid-Empty-Random-8x8-v0", entry_point="heightgrid.envs_v2:EmptyRandomEnv8x8"
 )
 
-register(id="HeightGrid-Empty-6x6-v0", entry_point="heightgrid.envs:EmptyEnv6x6")
+register(id="HeightGrid-Empty-6x6-v0", entry_point="heightgrid.envs_v2:EmptyEnv6x6")
 
 register(
-    id="HeightGrid-Empty-Random-6x6-v0", entry_point="heightgrid.envs:EmptyRandomEnv6x6"
+    id="HeightGrid-Empty-Random-6x6-v0", entry_point="heightgrid.envs_v2:EmptyRandomEnv6x6"
 )
 
-register(id="HeightGrid-Empty-16x16-v0", entry_point="heightgrid.envs:EmptyEnv16x16")
+register(id="HeightGrid-Empty-16x16-v0", entry_point="heightgrid.envs_v2:EmptyEnv16x16")
 register(
-    id="HeightGrid-Empty-Random-16x16-v0", entry_point="heightgrid.envs:EmptyRandomEnv16x16"
+    id="HeightGrid-Empty-Random-16x16-v0", entry_point="heightgrid.envs_v2:EmptyRandomEnv16x16"
 )
 
-
-
-register(id="HeightGrid-Empty-32x32-v0", entry_point="heightgrid.envs:EmptyEnv32x32")
+register(id="HeightGrid-Empty-32x32-v0", entry_point="heightgrid.envs_v2:EmptyEnv32x32")

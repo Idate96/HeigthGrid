@@ -1,20 +1,20 @@
+from heightgrid.create_maps import create_rectangle
 from heightgrid.heightgrid_v2 import *
 from heightgrid.register import register
-from heightgrid.create_maps import create_rectangle
 
 
 class ProceduralTrenchEnv(GridWorld):
     def __init__(self, **kwargs):
         self.global_rewards = {"collision_reward": -0.01,  # against wall 0, ok
-                   "longitudinal_step_reward": -0.001,
-                   "base_turn_reward": -0.004,  # ok
-                   "dig_reward": 0.1,  # ok
-                   "dig_wrong_reward": -2,  # ok
-                   "move_dirt_reward": 0.1,
-                   "existence_reward": -0.0005,  # ok
-                   "cabin_turn_reward": -0.001,  # ok
-                   "reward_scaling": 1, # ok
-                   "terminal_reward": 1}
+                               "longitudinal_step_reward": -0.001,
+                               "base_turn_reward": -0.004,  # ok
+                               "dig_reward": 0.1,  # ok
+                               "dig_wrong_reward": -2,  # ok
+                               "move_dirt_reward": 0.1,
+                               "existence_reward": -0.0005,  # ok
+                               "cabin_turn_reward": -0.001,  # ok
+                               "reward_scaling": 1,  # ok
+                               "terminal_reward": 1}
 
         self.name = "ProceduralTrench"
         self.map_size = 7
@@ -31,7 +31,9 @@ class ProceduralTrenchEnv(GridWorld):
         self.max_num_trenches = int(self.map_size / 2)
         self.min_num_trenches = 1
         self.level = 0
-        self.max_level = (self.max_num_trenches - self.min_num_trenches + 1) * (self.max_trench_width - self.min_trench_width + 1) * (self.max_trench_length - self.min_trench_length + 1)
+        self.max_level = (self.max_num_trenches - self.min_num_trenches + 1) * (
+                    self.max_trench_width - self.min_trench_width + 1) * (
+                                     self.max_trench_length - self.min_trench_length + 1)
         print("max level: ", self.max_level)
         self.reward_scaling = self.global_rewards["reward_scaling"]
         self.terminal_reward_0 = self.global_rewards["terminal_reward"]
@@ -49,9 +51,13 @@ class ProceduralTrenchEnv(GridWorld):
         # print("Generating level: {}".format(self.level))
         # progressively increase in this order the number of trenches, the trench length and the trench width
         self.trench_lenght = self.min_trench_length + self.level % (self.max_trench_length - self.min_trench_length + 1)
-        self.trench_width = self.min_trench_width + int(self.level / (self.max_trench_length - self.min_trench_length + 1)) % (self.max_trench_width - self.min_trench_width + 1)
-        self.num_trenches = self.min_num_trenches + int(self.level / ((self.max_trench_width - self.min_trench_width + 1) *
-                                                        (self.max_trench_length - self.min_trench_length + 1))) % (self.max_num_trenches - self.min_num_trenches + 1)
+        self.trench_width = self.min_trench_width + int(
+            self.level / (self.max_trench_length - self.min_trench_length + 1)) % (
+                                        self.max_trench_width - self.min_trench_width + 1)
+        self.num_trenches = self.min_num_trenches + int(
+            self.level / ((self.max_trench_width - self.min_trench_width + 1) *
+                          (self.max_trench_length - self.min_trench_length + 1))) % (
+                                        self.max_num_trenches - self.min_num_trenches + 1)
         # print("trench_lenght: {}, trench_width: {}, num_trenches: {}".format(self.trench_lenght, self.trench_width, self.num_trenches))
 
         occupied_space = 1

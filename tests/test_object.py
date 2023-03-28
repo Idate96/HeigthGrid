@@ -1,6 +1,6 @@
 import unittest
 import numpy as np 
-from heightgrid.heightgrid import Goal, AgentObj, Ramp
+from heightgrid.heightgrid_v2 import Goal, AgentObj, Ramp
 
 class TestObjects(unittest.TestCase):
 
