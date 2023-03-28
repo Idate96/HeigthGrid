@@ -1,3 +1,5 @@
-matplotlib==3.4.1
-gym==0.18.0
-numpy==1.20.2
+gym
+matplotlib
+networkx
+numpy
+setuptools

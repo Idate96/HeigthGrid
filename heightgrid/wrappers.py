@@ -1,11 +1,11 @@
+import gym
 import math
+import numpy as np
 import operator
 from functools import reduce
-
-import numpy as np
-import gym
 from gym import error, spaces, utils
-from .heightgrid import OBJECT_TO_IDX, COLOR_TO_IDX, Goal
+
+from heightgrid.heightgrid_v2 import OBJECT_TO_IDX, COLOR_TO_IDX, Goal
 
 
 class ReseedWrapper(gym.core.Wrapper):
@@ -46,7 +46,7 @@ class ActionBonus(gym.core.Wrapper):
         obs, reward, done, info = self.env.step(action)
 
         env = self.unwrapped
-        tup = (tuple(env.agent_pos), env.agent_dir, action)
+        tup = (tuple(env.agent_pos), env.base_dir, action)
 
         # Get the count for this (s,a) pair
         pre_count = 0
@@ -104,20 +104,19 @@ class StateBonus(gym.core.Wrapper):
 
 class ImgTransposeWrapper(gym.core.ObservationWrapper):
     def __init__(self, env) -> None:
-      super().__init__(env)
-      image_shape = self.observation_space['image'].shape
-      reshaped_obs_space = {}
+        super().__init__(env)
+        image_shape = self.observation_space['image'].shape
+        reshaped_obs_space = {}
 
-      for key in self.observation_space:
-        if key == "image":
-          reshaped_obs_space["image"]  = spaces.Box(
-                low=-10, high=10, shape=(image_shape[2], image_shape[1], image_shape[0]), dtype=np.int8
-            )
-        else:
-          reshaped_obs_space[key] = self.observation_space[key]
-      
-      self.observation_space = spaces.Dict(reshaped_obs_space)
+        for key in self.observation_space:
+            if key == "image":
+                reshaped_obs_space["image"] = spaces.Box(
+                    low=-10, high=10, shape=(image_shape[2], image_shape[1], image_shape[0]), dtype=np.int8
+                )
+            else:
+                reshaped_obs_space[key] = self.observation_space[key]
 
+        self.observation_space = spaces.Dict(reshaped_obs_space)
 
     def observation(self, obs):
         obs["image"] = obs["image"].T
@@ -249,7 +248,7 @@ class FullyObsWrapper(gym.core.ObservationWrapper):
         env = self.unwrapped
         full_grid = env.grid.encode()
         full_grid[env.agent_pos[0]][env.agent_pos[1]] = np.array(
-            [OBJECT_TO_IDX["agent"], COLOR_TO_IDX["red"], env.agent_dir]
+            [OBJECT_TO_IDX["agent"], COLOR_TO_IDX["red"], env.base_dir]
         )
 
         return {"mission": obs["mission"], "image": full_grid}
@@ -329,7 +328,7 @@ class FlatObsWrapper(gym.core.ObservationWrapper):
         # Cache the last-encoded mission string
         if mission != self.cachedStr:
             assert (
-                len(mission) <= self.maxStrLen
+                    len(mission) <= self.maxStrLen
             ), "mission string too long ({} chars)".format(len(mission))
             mission = mission.lower()
 
@@ -401,7 +400,7 @@ class DirectionObsWrapper(gym.core.ObservationWrapper):
                 x for x, y in enumerate(self.grid.grid) if isinstance(y, (Goal))
             ]
             if (
-                len(self.goal_position) >= 1
+                    len(self.goal_position) >= 1
             ):  # in case there are multiple goals , needs to be handled for other env types
                 self.goal_position = (
                     int(self.goal_position[0] / self.height),

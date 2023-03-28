@@ -1,5 +1,5 @@
-import sys
 import numpy as np
+import sys
 
 # Only ask users to install matplotlib if they actually need it
 try:
@@ -8,6 +8,7 @@ except:
     print('To display the environment in a window, please install matplotlib, eg:')
     print('pip3 install --user matplotlib')
     sys.exit(-1)
+
 
 class Window:
     """
@@ -23,7 +24,7 @@ class Window:
         self.fig, self.ax = plt.subplots()
 
         # Show the env name in the window title
-        self.fig.canvas.set_window_title(title)
+        self.fig.canvas.setWindowTitle(title)
 
         # Turn off x/y axis numbering/ticks
         self.ax.xaxis.set_ticks_position('none')

@@ -1,4 +1,4 @@
-import numpy as np 
+import numpy as np
 
 
 def create_rectangle(map, hole_size, start_idx, value):

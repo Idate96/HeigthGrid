@@ -1,24 +1,9 @@
 #!/usr/bin/env python3
 
-from heightgrid.envs.random_height import RandomTargetHeightEnv5x5, RandomTargetHeightEnv8x8, RandomTargetHeightEnv
-from numpy import random
-from heightgrid.envs.hole import Hole, HoleEnv5x5
-
-# from heightgrid.dm_envs.random_height import RandomHeightEnv5x5
-from matplotlib.pyplot import grid
-from heightgrid.envs.empty import (
-    EmptyEnv32x32,
-    EmptyEnv5x5,
-    EmptyRandomEnv8x8,
-    EmptyRandomEnv5x5,
-)
-import time
+from heightgrid.envs_v2.hole import HoleEnv5x5_1x1, HoleEnv5x5_3x3, HoleEnv7x7_3x3
+from heightgrid.envs_v2.trench import TrenchEnv7x7_3x1, TrenchEnv5x5_1x1, TrenchEnv5x5_3x1, ProceduralTrenchEnv
+from heightgrid.envs_v2.trench import ConnectedTrenchEnv
 import argparse
-import numpy as np
-import gym
-import heightgrid.heightgrid as heightgrid
-from heightgrid.wrappers import *
-from heightgrid.window import Window
 
 
 def redraw():
@@ -30,6 +15,8 @@ def redraw():
 
 
 def reset():
+    obs = env.reset()
+    env.level_up()
     if args.seed != -1:
         env.seed(args.seed)
 
@@ -39,57 +26,42 @@ def reset():
 
     redraw()
 
-
-# def step(action):
-#     obs, reward, done, info = env.step(action)
-#     print('step=%s, reward=%.2f' % (env.step_count, reward))
-
-#     if done:
-#         print('done!')
-#         reset()
-#     else:
-#         redraw()
-
-
 def key_handler(event):
     print("pressed", event.key)
 
     if event.key == "escape":
         env.window.close()
         env.window_target.close()
-        return
 
     if event.key == "backspace":
         reset()
-        return
 
     if event.key == "left":
-        obs, reward, done, info = env.step(env.actions.left)
+        obs, reward, done, info = env.step(env.actions.rotate_base_counter)
         parse_step(obs, reward, done, info)
-        return
+
     if event.key == "right":
-        obs, reward, done, info = env.step(env.actions.right)
+        obs, reward, done, info = env.step(env.actions.rotate_base_clock)
         parse_step(obs, reward, done, info)
-        return
+
     if event.key == "up":
         obs, reward, done, info = env.step(env.actions.forward)
         parse_step(obs, reward, done, info)
 
-        return
+    if event.key == "down":
+        obs, reward, done, info = env.step(env.actions.backward)
+        parse_step(obs, reward, done, info)
 
-    # Spacebar
+    if event.key == "a":
+        obs, reward, done, info = env.step(env.actions.rotate_cabin_counter)
+        parse_step(obs, reward, done, info)
+
+    if event.key == "d":
+        obs, reward, done, info = env.step(env.actions.rotate_cabin_clock)
+        parse_step(obs, reward, done, info)
+
     if event.key == " ":
-        obs, reward, done, info = env.step(env.actions.toggle)
-        parse_step(obs, reward, done, info)
-        return
-
-    if event.key == "pageup":
-        # print(step(env.actions.dig))
-        obs, reward, done, info = env.step(env.actions.dig)
-        parse_step(obs, reward, done, info)
-        return
-    if event.key == "pagedown":
-        obs, reward, done, info = env.step(env.actions.drop)
+        obs, reward, done, info = env.step(env.actions.do)
         parse_step(obs, reward, done, info)
         return
 
@@ -114,11 +86,11 @@ def parse_step(obs, reward, done, info):
     # print("obs \n", obs)
 
     print("Reward :", reward)
-    print("mask ", obs["mask"])
     print("Done: ", done)
 
 
 parser = argparse.ArgumentParser()
+
 parser.add_argument(
     "--env", help="gym environment to load", default="HeightGrid-Empty-5x5-v0"
 )
@@ -141,9 +113,19 @@ args = parser.parse_args()
 # grid_height[1, 3] = 1
 # env = gym.make(args.env)
 # env = EmptyEnv5x5()
+rewards = {"collision_reward": -1, # against wall 0, ok
+           "longitudinal_step_reward": -0.1,
+           "base_turn_reward": -0.2, # ok
+           "dig_reward": 1, # ok
+           "dig_wrong_reward": -2, # ok
+           "move_dirt_reward": 1,
+           "existence_reward": -0.05, # ok
+           "cabin_turn_reward": -0.05, # ok
+           "terminal_reward": 10}
 
-env = RandomTargetHeightEnv(size=8, num_digging_pts=4, mask=True)
-env.seed(24)
+env = ConnectedTrenchEnv()
+print(env)
+env.seed = 24
 env.reset()
 # if args.agent_view:
 #     env = FullyObsWrapper(env)

@@ -1,5 +1,6 @@
 from numpy import random
-from heightgrid.heightgrid import *
+
+from heightgrid.heightgrid_v2 import *
 from heightgrid.register import register
 
 
@@ -9,12 +10,12 @@ class RandomHeights(GridWorld):
     """
 
     def __init__(
-        self,
-        grid_height,
-        target_grid_height,
-        agent_start_pos=(1, 1),
-        agent_start_dir=0,
-        **kwargs
+            self,
+            grid_height,
+            target_grid_height,
+            agent_start_pos=(1, 1),
+            agent_start_dir=0,
+            **kwargs
     ):
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
@@ -148,12 +149,10 @@ register(
     entry_point="heightgrid.envs:RandomHeightEnv5x5",
 )
 
-
 register(
     id="HeightGrid-RandomTargetHeight-8x8-v0",
     entry_point="heightgrid.envs:RandomTargetHeightEnv8x8",
 )
-
 
 register(
     id="HeightGrid-RandomTargetHeight-v0",
