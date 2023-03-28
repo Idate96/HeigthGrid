@@ -26,18 +26,6 @@ def reset():
 
     redraw()
 
-
-# def step(action):
-#     obs, reward, done, info = env.step(action)
-#     print('step=%s, reward=%.2f' % (env.step_count, reward))
-
-#     if done:
-#         print('done!')
-#         reset()
-#     else:
-#         redraw()
-
-
 def key_handler(event):
     print("pressed", event.key)
 
@@ -137,7 +125,7 @@ rewards = {"collision_reward": -1, # against wall 0, ok
 
 env = ConnectedTrenchEnv()
 print(env)
-env.seed(24)
+env.seed = 24
 env.reset()
 # if args.agent_view:
 #     env = FullyObsWrapper(env)

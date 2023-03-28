@@ -272,7 +272,7 @@ class GridWorld(gym.Env):
         self._goal = False
         self.step_count = 0
         self.max_steps = max_steps
-        self.seed(seed=seed)
+        self.seed = seed
 
         # rewards
         self.collision_reward = rewards["collision_reward"]

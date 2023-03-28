@@ -158,13 +158,11 @@ class ConnectedTrenchEnv(GridWorld):
                          **kwargs)
 
     def generate_level(self):
-        # print("Generating level: {}".format(self.level))
         # progressively increase in this order the number of trenches, the trench length and the trench width
         self.trench_lenght = self.min_trench_length + self.level % (self.max_trench_length - self.min_trench_length + 1)
         self.trench_width = self.min_trench_width + int(self.level / (self.max_trench_length - self.min_trench_length + 1)) % (self.max_trench_width - self.min_trench_width + 1)
         self.num_trenches = self.min_num_trenches + int(self.level / ((self.max_trench_width - self.min_trench_width + 1) *
                                                         (self.max_trench_length - self.min_trench_length + 1))) % (self.max_num_trenches - self.min_num_trenches + 1)
-        # print("trench_lenght: {}, trench_width: {}, num_trenches: {}".format(self.trench_lenght, self.trench_width, self.num_trenches))
 
         occupied_space = 1
         num_blocks = 2
